@@ -209,7 +209,7 @@ export default function DogDashboardPage() {
                     <h1 className="text-3xl font-bold tracking-tight">{dogName}</h1>
                     <p className="text-muted-foreground">Medisinsporing</p>
                 </div>
-                <div className="grid grid-cols-3 gap-2 w-full md:w-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
                     <Button asChild variant="outline" className="w-full">
                         <Link href={`/dog/${dogId}/history`}>Historikk</Link>
                     </Button>
