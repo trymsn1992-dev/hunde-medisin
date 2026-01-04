@@ -29,6 +29,7 @@ export default function DogDashboardPage() {
     const [loading, setLoading] = useState(true)
     const [dogName, setDogName] = useState("")
     const [inviteCode, setInviteCode] = useState("")
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [todayDoses, setTodayDoses] = useState<DoseEvent[]>([])
     const [tomorrowDoses, setTomorrowDoses] = useState<DoseEvent[]>([])
 
@@ -188,14 +189,11 @@ export default function DogDashboardPage() {
     }
 
     const handleDeleteDog = async () => {
-        if (confirm("Er du sikker på at du vil slette denne hundeprofilen? Dette kan ikke angres.")) {
-            // Loading state?
-            const res = await deleteDog(dogId)
-            if (res?.message) {
-                alert(res.message)
-            }
+        // Loading state?
+        const res = await deleteDog(dogId)
+        if (res?.message) {
+            alert(res.message)
         }
-
     }
 
     const handleInvite = () => {
@@ -331,9 +329,26 @@ export default function DogDashboardPage() {
             </section>
 
             <div className="pt-8 border-t">
-                <Button variant="outline" className="w-full sm:w-auto text-destructive hover:bg-destructive/10 border-destructive/50" onClick={handleDeleteDog}>
-                    <Trash2 className="mr-2 h-4 w-4" /> Slett Hundeprofil
-                </Button>
+                {!showDeleteConfirm ? (
+                    <Button variant="outline" className="w-full sm:w-auto text-destructive hover:bg-destructive/10 border-destructive/50" onClick={() => setShowDeleteConfirm(true)}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Slett Hundeprofil
+                    </Button>
+                ) : (
+                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-red-50 dark:bg-red-900/10 p-4 rounded-lg border border-red-100 dark:border-red-900/20">
+                        <div className="text-center sm:text-left">
+                            <p className="font-semibold text-destructive">Er du helt sikker?</p>
+                            <p className="text-sm text-muted-foreground">Dette sletter hele profilen og all historikk.</p>
+                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <Button variant="destructive" className="flex-1 sm:flex-none" onClick={handleDeleteDog}>
+                                Ja, slett
+                            </Button>
+                            <Button variant="ghost" className="flex-1 sm:flex-none" onClick={() => setShowDeleteConfirm(false)}>
+                                Avbryt
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
