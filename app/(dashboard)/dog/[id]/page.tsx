@@ -325,7 +325,7 @@ export default function DogDashboardPage() {
                                     </div>
                                 </Card>
                             )
-                        })}
+                            ))}
                         </div>
                 </section>
 
