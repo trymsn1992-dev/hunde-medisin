@@ -19,7 +19,7 @@ export default function ScanMedicinePage() {
     const webcamRef = useRef<Webcam>(null)
 
     const [mode, setMode] = useState<'upload' | 'camera'>('upload')
-    const [mirrored, setMirrored] = useState(true)
+    const [mirrored, setMirrored] = useState(false)
     const [imageSrc, setImageSrc] = useState<string | null>(null)
     const [isScanning, setIsScanning] = useState(false)
     const [error, setError] = useState<string | null>(null)
