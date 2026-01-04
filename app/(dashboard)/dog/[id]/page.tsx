@@ -309,14 +309,15 @@ export default function DogDashboardPage() {
                                     </div>
                                 </div>
                             </Card>
-                        ))}
+                    </div>
+                )}
             </section>
 
             <div className="pt-8 border-t">
-                <Button variant="destructive" variant="outline" className="w-full sm:w-auto text-destructive hover:bg-destructive/10 border-destructive/50" onClick={handleDeleteDog}>
+                <Button variant="outline" className="w-full sm:w-auto text-destructive hover:bg-destructive/10 border-destructive/50" onClick={handleDeleteDog}>
                     <Trash2 className="mr-2 h-4 w-4" /> Slett Hundeprofil
                 </Button>
             </div>
-        </div >
+        </div>
     )
 }
