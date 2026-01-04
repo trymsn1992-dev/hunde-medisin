@@ -32,15 +32,7 @@ export default function DashboardPage() {
             // Fetch dogs where user is a member
             const { data, error } = await supabase
                 .from("dogs")
-                .select(`
-          id,
-          name,
-          image_url
-          -- we could join dog_members to filter, but RLS should handle visibility if policy is correct
-          -- Wait, RLS for 'select * from dogs' uses:
-          -- exists (select 1 from dog_members where dog_id=dogs.id and user_id=uid)
-          -- So simplistic fetch should work if RLS is on.
-        `)
+                .select('id, name, image_url')
 
             if (error) {
                 console.error("Error fetching dogs:", error)
