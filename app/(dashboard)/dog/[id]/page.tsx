@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Clock, CheckCircle, Pill, CalendarDays, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Trash2 } from "lucide-react"
+import { deleteDog } from "@/app/actions/dogs"
 
 type DoseEvent = {
     logId?: string
@@ -181,6 +183,16 @@ export default function DogDashboardPage() {
         }
     }
 
+    const handleDeleteDog = async () => {
+        if (confirm("Er du sikker på at du vil slette denne hundeprofilen? Dette kan ikke angres.")) {
+            // Loading state?
+            const res = await deleteDog(dogId)
+            if (res?.message) {
+                alert(res.message)
+            }
+        }
+    }
+
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -298,9 +310,13 @@ export default function DogDashboardPage() {
                                 </div>
                             </Card>
                         ))}
-                    </div>
-                )}
             </section>
-        </div>
+
+            <div className="pt-8 border-t">
+                <Button variant="destructive" variant="outline" className="w-full sm:w-auto text-destructive hover:bg-destructive/10 border-destructive/50" onClick={handleDeleteDog}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Slett Hundeprofil
+                </Button>
+            </div>
+        </div >
     )
 }
