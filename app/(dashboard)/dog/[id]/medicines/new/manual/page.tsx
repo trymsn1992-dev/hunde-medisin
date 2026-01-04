@@ -6,7 +6,7 @@ import Link from "next/link"
 import { createMedicine } from "@/app/actions/medicines"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -87,9 +87,10 @@ export default function ManualEntryPage() {
             router.push(`/dog/${dogId}/`) // Go to dashboard to see it
             router.refresh()
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err)
-            alert("Error: " + err.message)
+            const message = err instanceof Error ? err.message : "Unknown error"
+            alert("Error: " + message)
         } finally {
             setLoading(false)
         }

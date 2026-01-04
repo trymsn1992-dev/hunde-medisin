@@ -78,11 +78,14 @@ export default function DogDashboardPage() {
                     const now = new Date()
                     const currentTotalMins = now.getHours() * 60 + now.getMinutes()
 
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     plans.forEach((p: any) => {
                         const times = (p.schedule_times as string[] || []).sort()
                         // Find logs for this plan
-                        const planLogs = logs?.filter(l => l.plan_id === p.id) || []
-                        const sortedLogs = planLogs.sort((a, b) => new Date(a.taken_at).getTime() - new Date(b.taken_at).getTime())
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const planLogs = logs?.filter((l: any) => l.plan_id === p.id) || []
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const sortedLogs = planLogs.sort((a: any, b: any) => new Date(a.taken_at).getTime() - new Date(b.taken_at).getTime())
 
                         times.forEach((t, index) => {
                             events.push(createEvent(p, t, index, sortedLogs, currentTotalMins, isToday))
@@ -91,6 +94,7 @@ export default function DogDashboardPage() {
                     return events.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime))
                 }
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const createEvent = (p: any, t: string, index: number, sortedLogs: any[], currentMins: number, isToday: boolean): DoseEvent => {
                     const [h, m] = t.split(':').map(Number)
                     const scheduledMins = h * 60 + m
@@ -168,9 +172,10 @@ export default function DogDashboardPage() {
             }
             // If successful, refresh data to update UI
             await fetchData()
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Toggle failed:", error)
-            alert("Handling feilet: " + (error.message || "Ukjent feil"))
+            const message = error instanceof Error ? error.message : "Ukjent feil"
+            alert("Handling feilet: " + message)
         } finally {
             setProcessingDoseKey(null) // Stop loading
         }

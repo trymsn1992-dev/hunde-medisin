@@ -67,9 +67,10 @@ export default function ScanMedicinePage() {
                 category: result.category || undefined
             })
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("OCR Error:", err)
-            setError(err.message || "Failed to scan image.")
+            const message = err instanceof Error ? err.message : "Failed to scan image."
+            setError(message)
         } finally {
             setIsScanning(false)
         }

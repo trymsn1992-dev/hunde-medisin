@@ -12,6 +12,7 @@ import { Plus, ArrowLeft, Trash2 } from "lucide-react"
 export default function MedicinesPage() {
     const params = useParams()
     const dogId = params.id as string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [medicines, setMedicines] = useState<any[]>([])
     const supabase = createClient()
     const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -47,7 +48,7 @@ export default function MedicinesPage() {
             }
             // Optimistic update
             setMedicines(medicines.filter(m => m.id !== id))
-        } catch (err) {
+        } catch (_) {
             alert("Unexpected error occurred")
         } finally {
             setDeletingId(null)

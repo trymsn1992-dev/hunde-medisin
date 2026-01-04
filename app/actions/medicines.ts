@@ -64,6 +64,8 @@ export async function createMedicine(data: {
 
         // 3. Backfill logs if start date is in the past
         const now = new Date()
+        const todayStart = new Date(now)
+        todayStart.setHours(0, 0, 0, 0)
         // Reset "now" to compare strictly by time (or keep it real time)
         // Logic: Iterate from start date up to NOW.
 
@@ -74,8 +76,8 @@ export async function createMedicine(data: {
         const logsToInsert = []
 
         // While current day <= today (ignoring time for the loop condition, checking time inside)
-        while (current <= now) {
-            const dateStr = current.toISOString().split('T')[0] // YYYY-MM-DD
+        while (current < todayStart) {
+            // const dateStr = current.toISOString().split('T')[0] // Unused
 
             for (const time of data.times) {
                 const [hours, minutes] = time.split(':').map(Number)
@@ -117,9 +119,10 @@ export async function createMedicine(data: {
         revalidatePath('/', 'layout')
         return { success: true, id: med.id }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Create Medicine Error:", error)
-        return { success: false, error: error.message || "Failed to create medicine" }
+        const message = error instanceof Error ? error.message : "Failed to create medicine"
+        return { success: false, error: message }
     }
 }
 
@@ -161,8 +164,9 @@ export async function deleteMedicine(id: string) {
 
         revalidatePath('/', 'layout')
         return { success: true }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Delete Action Error:", error)
-        return { success: false, error: error.message || "Failed to delete medicine" }
+        const message = error instanceof Error ? error.message : "Failed to delete medicine"
+        return { success: false, error: message }
     }
 }

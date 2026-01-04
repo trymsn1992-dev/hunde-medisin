@@ -93,9 +93,10 @@ export async function scanMedicationImage(imageBase64: string): Promise<Medicati
             category: result.category || null
         }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("OpenAI Vision Error:", error)
         // Throw the actual error message so the client can see it
-        throw new Error(error.message || "Failed to analyze image.")
+        const message = error instanceof Error ? error.message : "Failed to analyze image."
+        throw new Error(message)
     }
 }

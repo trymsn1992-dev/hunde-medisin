@@ -52,9 +52,10 @@ export default function NewDogPage() {
             router.push(`/dog/${dogData.id}`)
             router.refresh()
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err)
-            alert("Error creating dog: " + err.message)
+            const message = err instanceof Error ? err.message : "Unknown error"
+            alert("Error creating dog: " + message)
         } finally {
             setLoading(false)
         }

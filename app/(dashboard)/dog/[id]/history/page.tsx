@@ -11,6 +11,7 @@ import { ArrowLeft } from "lucide-react"
 export default function HistoryPage() {
     const params = useParams()
     const dogId = params.id as string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [logs, setLogs] = useState<any[]>([])
     const supabase = createClient()
 
@@ -53,7 +54,7 @@ export default function HistoryPage() {
                                     <p className="text-sm text-muted-foreground">
                                         {new Date(log.taken_at).toLocaleString()}
                                     </p>
-                                    {log.notes && <p className="text-sm italic">"{log.notes}"</p>}
+                                    {log.notes && <p className="text-sm italic">&quot;{log.notes}&quot;</p>}
                                 </div>
                                 <div className="text-right">
                                     <span className="text-sm font-medium px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100">
