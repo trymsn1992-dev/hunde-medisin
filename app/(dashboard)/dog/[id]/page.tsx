@@ -204,23 +204,23 @@ export default function DogDashboardPage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">{dogName}</h1>
-                    <p className="text-muted-foreground">Medication Tracker</p>
+                    <p className="text-muted-foreground">Medisinsporing</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button asChild variant="outline">
-                        <Link href={`/dog/${dogId}/history`}>History</Link>
+                <div className="grid grid-cols-3 gap-2 w-full md:w-auto">
+                    <Button asChild variant="outline" className="w-full">
+                        <Link href={`/dog/${dogId}/history`}>Historikk</Link>
                     </Button>
-                    <Button asChild>
+                    <Button asChild className="w-full">
                         <Link href={`/dog/${dogId}/medicines`}>
-                            <Pill className="mr-2 h-4 w-4" /> Medicines
+                            <Pill className="mr-2 h-4 w-4" /> Medisiner
                         </Link>
                     </Button>
                     {inviteCode && (
-                        <Button variant="secondary" onClick={handleInvite}>
-                            <UserPlus className="mr-2 h-4 w-4" /> Invite
+                        <Button variant="secondary" onClick={handleInvite} className="w-full">
+                            <UserPlus className="mr-2 h-4 w-4" /> Inviter
                         </Button>
                     )}
                 </div>
@@ -228,15 +228,15 @@ export default function DogDashboardPage() {
 
             <section className="space-y-4">
                 <div className="flex items-center gap-2 text-xl font-semibold">
-                    <Clock className="h-5 w-5 text-primary" /> Schedule for Today
+                    <Clock className="h-5 w-5 text-primary" /> Dagens plan
                 </div>
 
                 {loading ? (
-                    <div className="text-muted-foreground">Loading schedule...</div>
+                    <div className="text-muted-foreground">Laster plan...</div>
                 ) : todayDoses.length === 0 ? (
                     <Card className="bg-muted/30 border-dashed">
                         <CardContent className="pt-6 text-center text-muted-foreground">
-                            Nothing scheduled for today.
+                            Ingenting på planen i dag.
                         </CardContent>
                     </Card>
                 ) : (
@@ -286,10 +286,10 @@ export default function DogDashboardPage() {
                                                     <Loader2 className="h-4 w-4 animate-spin" />
                                                 ) : dose.status === 'taken' ? (
                                                     <>
-                                                        <CheckCircle className="mr-2 h-4 w-4" /> Given
+                                                        <CheckCircle className="mr-2 h-4 w-4" /> Gitt
                                                     </>
                                                 ) : (
-                                                    "Mark Given"
+                                                    "Gi dose"
                                                 )}
                                             </Button>
                                         </div>
@@ -303,10 +303,10 @@ export default function DogDashboardPage() {
 
             <section className="space-y-4 opacity-60">
                 <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground">
-                    <CalendarDays className="h-5 w-5" /> Tomorrow
+                    <CalendarDays className="h-5 w-5" /> I morgen
                 </div>
                 {tomorrowDoses.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">No medicines scheduled.</p>
+                    <p className="text-muted-foreground text-sm">Ingen medisiner planlagt.</p>
                 ) : (
                     <div className="grid gap-3">
                         {tomorrowDoses.map((dose, i) => (
