@@ -60,7 +60,7 @@ export default function SignupPage() {
                 router.refresh()
             }
         } catch (_) {
-            setError("Something went wrong")
+            setError("Noe gikk galt")
         } finally {
             setLoading(false)
         }
