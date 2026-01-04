@@ -76,47 +76,41 @@ export default function DashboardPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                return (
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h1 className="text-3xl font-bold tracking-tight">Dine hunder</h1>
-                        <Button asChild size="sm">
-                            <Link href="/new-dog">
-                                <Plus className="mr-2 h-4 w-4" /> Legg til hund
-                            </Link>
-                        </Button>
-                    </div>
+                <h1 className="text-3xl font-bold tracking-tight">Dine hunder</h1>
+                <Button asChild size="sm">
+                    <Link href="/new-dog">
+                        <Plus className="mr-2 h-4 w-4" /> Legg til hund
+                    </Link>
+                </Button>
+            </div>
 
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {dogs.map((dog) => (
-                            <Link key={dog.id} href={`/dog/${dog.id}`}>
-                                <Card className="hover:bg-accent/5 transition-colors cursor-pointer border-l-4 border-l-primary">
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                                        <div className="space-y-1">
-                                            <CardTitle className="text-xl">{dog.name}</CardTitle>
-                                            <div className="space-y-1">
-                                                <CardTitle className="text-xl">{dog.name}</CardTitle>
-                                                <CardDescription>Klikk for å administrere</CardDescription>
-                                            </div>
-                                            {dog.image_url ? (
-                                                // eslint-disable-next-line @next/next/no-img-element
-                                                <img src={dog.image_url} alt={dog.name} className="h-12 w-12 rounded-full object-cover bg-muted" />
-                                            ) : (
-                                                <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                                                    {dog.name.substring(0, 2).toUpperCase()}
-                                                </div>
-                                            )}
-                                    </CardHeader>
-                                    <CardFooter className="pt-0">
-                                        <div className="flex items-center text-sm text-muted-foreground w-full justify-end">
-                                            <div className="flex items-center text-sm text-muted-foreground w-full justify-end">
-                                                Gå til oversikt <ChevronRight className="ml-1 h-4 w-4" />
-                                            </div>
-                                    </CardFooter>
-                                </Card>
-                            </Link>
-                        ))}
-                    </div>
-                </div>
-                )
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {dogs.map((dog) => (
+                    <Link key={dog.id} href={`/dog/${dog.id}`}>
+                        <Card className="hover:bg-accent/5 transition-colors cursor-pointer border-l-4 border-l-primary">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-xl">{dog.name}</CardTitle>
+                                    <CardDescription>Klikk for å administrere</CardDescription>
+                                </div>
+                                {dog.image_url ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={dog.image_url} alt={dog.name} className="h-12 w-12 rounded-full object-cover bg-muted" />
+                                ) : (
+                                    <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                                        {dog.name.substring(0, 2).toUpperCase()}
+                                    </div>
+                                )}
+                            </CardHeader>
+                            <CardFooter className="pt-0">
+                                <div className="flex items-center text-sm text-muted-foreground w-full justify-end">
+                                    Gå til oversikt <ChevronRight className="ml-1 h-4 w-4" />
+                                </div>
+                            </CardFooter>
+                        </Card>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    )
 }
