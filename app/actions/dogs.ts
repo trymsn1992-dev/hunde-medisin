@@ -86,3 +86,26 @@ export async function deleteDog(dogId: string) {
     revalidatePath("/dashboard")
     redirect("/dashboard")
 }
+
+export async function joinDogByInvite(inviteCode: string) {
+    const supabase = await createClient()
+
+    try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { message: "Not authenticated" }
+
+        const { data: dogId, error } = await supabase.rpc('join_dog_by_invite', {
+            _code: inviteCode
+        })
+
+        if (error) {
+            console.error("Join dog error:", error)
+            return { message: "Failed to join: " + error.message }
+        }
+
+        return { success: true, dogId }
+
+    } catch (e) {
+        return { message: "Unexpected error" }
+    }
+}

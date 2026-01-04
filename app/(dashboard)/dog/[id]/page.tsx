@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Clock, CheckCircle, Pill, CalendarDays, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Trash2 } from "lucide-react"
+import { Trash2, UserPlus, Copy } from "lucide-react"
 import { deleteDog } from "@/app/actions/dogs"
 
 type DoseEvent = {
@@ -28,6 +28,7 @@ export default function DogDashboardPage() {
     const dogId = params.id as string
     const [loading, setLoading] = useState(true)
     const [dogName, setDogName] = useState("")
+    const [inviteCode, setInviteCode] = useState("")
     const [todayDoses, setTodayDoses] = useState<DoseEvent[]>([])
     const [tomorrowDoses, setTomorrowDoses] = useState<DoseEvent[]>([])
 
@@ -45,8 +46,11 @@ export default function DogDashboardPage() {
         if (!user) return
 
         // 1. Fetch Dog Info
-        const { data: dog } = await supabase.from("dogs").select("name").eq("id", dogId).single()
-        if (dog) setDogName(dog.name)
+        const { data: dog } = await supabase.from("dogs").select("name, invite_code").eq("id", dogId).single()
+        if (dog) {
+            setDogName(dog.name)
+            setInviteCode(dog.invite_code)
+        }
 
         // 2. Fetch Medicines for this dog
         const { data: medicines } = await supabase.from('medicines').select('id').eq('dog_id', dogId)
@@ -191,133 +195,152 @@ export default function DogDashboardPage() {
                 alert(res.message)
             }
         }
-    }
+        const handleDeleteDog = async () => {
+            if (confirm("Er du sikker på at du vil slette denne hundeprofilen? Dette kan ikke angres.")) {
+                // Loading state?
+                const res = await deleteDog(dogId)
+                if (res?.message) {
+                    alert(res.message)
+                }
+            }
+        }
 
-    return (
-        <div className="space-y-8">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">{dogName}</h1>
-                    <p className="text-muted-foreground">Medication Tracker</p>
+        const handleInvite = () => {
+            const url = `${window.location.origin}/join/${inviteCode}`
+            navigator.clipboard.writeText(url)
+            alert("Invitasjonslenke kopiert til utklippstavlen! Send den til andre.")
+        }
+
+        return (
+            <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">{dogName}</h1>
+                        <p className="text-muted-foreground">Medication Tracker</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button asChild variant="outline">
+                            <Link href={`/dog/${dogId}/history`}>History</Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href={`/dog/${dogId}/medicines`}>
+                                <Pill className="mr-2 h-4 w-4" /> Medicines
+                            </Link>
+                        </Button>
+                        {inviteCode && (
+                            <Button variant="secondary" onClick={handleInvite}>
+                                <UserPlus className="mr-2 h-4 w-4" /> Invite
+                            </Button>
+                        )}
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button asChild variant="outline">
-                        <Link href={`/dog/${dogId}/history`}>History</Link>
-                    </Button>
-                    <Button asChild>
-                        <Link href={`/dog/${dogId}/medicines`}>
-                            <Pill className="mr-2 h-4 w-4" /> Medicines
-                        </Link>
-                    </Button>
-                </div>
-            </div>
 
-            <section className="space-y-4">
-                <div className="flex items-center gap-2 text-xl font-semibold">
-                    <Clock className="h-5 w-5 text-primary" /> Schedule for Today
-                </div>
+                <section className="space-y-4">
+                    <div className="flex items-center gap-2 text-xl font-semibold">
+                        <Clock className="h-5 w-5 text-primary" /> Schedule for Today
+                    </div>
 
-                {loading ? (
-                    <div className="text-muted-foreground">Loading schedule...</div>
-                ) : todayDoses.length === 0 ? (
-                    <Card className="bg-muted/30 border-dashed">
-                        <CardContent className="pt-6 text-center text-muted-foreground">
-                            Nothing scheduled for today.
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="grid gap-3">
-                        {todayDoses.map((dose, i) => {
-                            const doseKey = `${dose.planId}-${dose.scheduledTime}`
-                            const isProcessing = processingDoseKey === doseKey
+                    {loading ? (
+                        <div className="text-muted-foreground">Loading schedule...</div>
+                    ) : todayDoses.length === 0 ? (
+                        <Card className="bg-muted/30 border-dashed">
+                            <CardContent className="pt-6 text-center text-muted-foreground">
+                                Nothing scheduled for today.
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="grid gap-3">
+                            {todayDoses.map((dose, i) => {
+                                const doseKey = `${dose.planId}-${dose.scheduledTime}`
+                                const isProcessing = processingDoseKey === doseKey
 
-                            return (
-                                <Card key={i} className={cn(
-                                    "transition-all border-l-4",
-                                    dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
-                                    dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
-                                    dose.status === 'taken' && "border-l-muted-foreground/30 opacity-70 bg-muted/30"
-                                )}>
+                                return (
+                                    <Card key={i} className={cn(
+                                        "transition-all border-l-4",
+                                        dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
+                                        dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
+                                        dose.status === 'taken' && "border-l-muted-foreground/30 opacity-70 bg-muted/30"
+                                    )}>
+                                        <div className="flex items-center p-4">
+                                            <div className={cn(
+                                                "w-16 text-center font-bold text-lg",
+                                                dose.status === 'overdue' ? "text-red-500" : "text-foreground",
+                                                dose.status === 'taken' && "text-muted-foreground decoration-line-through"
+                                            )}>
+                                                {dose.scheduledTime}
+                                            </div>
+
+                                            <div className="flex-1 px-4">
+                                                <h3 className={cn("font-semibold text-lg leading-none", dose.status === 'taken' && "decoration-line-through text-muted-foreground")}>
+                                                    {dose.medicineName}
+                                                </h3>
+                                                <p className="text-sm text-muted-foreground mt-1">{dose.doseText}</p>
+                                            </div>
+
+                                            <div>
+                                                <Button
+                                                    onClick={() => toggleDose(dose)}
+                                                    disabled={isProcessing}
+                                                    className={cn(
+                                                        "min-w-[110px] font-semibold transition-all shadow-sm",
+                                                        // Taken State
+                                                        dose.status === 'taken' && "bg-emerald-100/10 text-emerald-500 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30",
+                                                        // Due State
+                                                        dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
+                                                        // Overdue State
+                                                        dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white"
+                                                    )}
+                                                >
+                                                    {isProcessing ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : dose.status === 'taken' ? (
+                                                        <>
+                                                            <CheckCircle className="mr-2 h-4 w-4" /> Given
+                                                        </>
+                                                    ) : (
+                                                        "Mark Given"
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                )
+                            })}
+                        </div>
+                    )}
+                </section>
+
+                <section className="space-y-4 opacity-60">
+                    <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground">
+                        <CalendarDays className="h-5 w-5" /> Tomorrow
+                    </div>
+                    {tomorrowDoses.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">No medicines scheduled.</p>
+                    ) : (
+                        <div className="grid gap-3">
+                            {tomorrowDoses.map((dose, i) => (
+                                <Card key={i} className="bg-muted/10 border-dashed">
                                     <div className="flex items-center p-4">
-                                        <div className={cn(
-                                            "w-16 text-center font-bold text-lg",
-                                            dose.status === 'overdue' ? "text-red-500" : "text-foreground",
-                                            dose.status === 'taken' && "text-muted-foreground decoration-line-through"
-                                        )}>
+                                        <div className="w-16 text-center font-bold text-lg text-muted-foreground">
                                             {dose.scheduledTime}
                                         </div>
-
                                         <div className="flex-1 px-4">
-                                            <h3 className={cn("font-semibold text-lg leading-none", dose.status === 'taken' && "decoration-line-through text-muted-foreground")}>
+                                            <h3 className="font-semibold text-lg text-muted-foreground">
                                                 {dose.medicineName}
                                             </h3>
                                             <p className="text-sm text-muted-foreground mt-1">{dose.doseText}</p>
                                         </div>
-
-                                        <div>
-                                            <Button
-                                                onClick={() => toggleDose(dose)}
-                                                disabled={isProcessing}
-                                                className={cn(
-                                                    "min-w-[110px] font-semibold transition-all shadow-sm",
-                                                    // Taken State
-                                                    dose.status === 'taken' && "bg-emerald-100/10 text-emerald-500 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30",
-                                                    // Due State
-                                                    dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
-                                                    // Overdue State
-                                                    dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white"
-                                                )}
-                                            >
-                                                {isProcessing ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : dose.status === 'taken' ? (
-                                                    <>
-                                                        <CheckCircle className="mr-2 h-4 w-4" /> Given
-                                                    </>
-                                                ) : (
-                                                    "Mark Given"
-                                                )}
-                                            </Button>
-                                        </div>
                                     </div>
                                 </Card>
-                            )
-                        })}
                     </div>
-                )}
-            </section>
+                    )}
+                </section>
 
-            <section className="space-y-4 opacity-60">
-                <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground">
-                    <CalendarDays className="h-5 w-5" /> Tomorrow
+                <div className="pt-8 border-t">
+                    <Button variant="outline" className="w-full sm:w-auto text-destructive hover:bg-destructive/10 border-destructive/50" onClick={handleDeleteDog}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Slett Hundeprofil
+                    </Button>
                 </div>
-                {tomorrowDoses.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">No medicines scheduled.</p>
-                ) : (
-                    <div className="grid gap-3">
-                        {tomorrowDoses.map((dose, i) => (
-                            <Card key={i} className="bg-muted/10 border-dashed">
-                                <div className="flex items-center p-4">
-                                    <div className="w-16 text-center font-bold text-lg text-muted-foreground">
-                                        {dose.scheduledTime}
-                                    </div>
-                                    <div className="flex-1 px-4">
-                                        <h3 className="font-semibold text-lg text-muted-foreground">
-                                            {dose.medicineName}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground mt-1">{dose.doseText}</p>
-                                    </div>
-                                </div>
-                            </Card>
-                    </div>
-                )}
-            </section>
-
-            <div className="pt-8 border-t">
-                <Button variant="outline" className="w-full sm:w-auto text-destructive hover:bg-destructive/10 border-destructive/50" onClick={handleDeleteDog}>
-                    <Trash2 className="mr-2 h-4 w-4" /> Slett Hundeprofil
-                </Button>
             </div>
-        </div>
-    )
-}
+        )
+    }
