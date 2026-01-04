@@ -195,15 +195,7 @@ export default function DogDashboardPage() {
                 alert(res.message)
             }
         }
-        const handleDeleteDog = async () => {
-            if (confirm("Er du sikker på at du vil slette denne hundeprofilen? Dette kan ikke angres.")) {
-                // Loading state?
-                const res = await deleteDog(dogId)
-                if (res?.message) {
-                    alert(res.message)
-                }
-            }
-        }
+
 
         const handleInvite = () => {
             const url = `${window.location.origin}/join/${inviteCode}`
@@ -332,8 +324,9 @@ export default function DogDashboardPage() {
                                         </div>
                                     </div>
                                 </Card>
-                    </div>
-                    )}
+                            )
+                        })}
+                        </div>
                 </section>
 
                 <div className="pt-8 border-t">
