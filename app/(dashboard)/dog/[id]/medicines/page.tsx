@@ -77,7 +77,11 @@ export default function MedicinesPage() {
                     <Card key={med.id}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <div>
-                                <CardTitle className="text-lg">{med.name}</CardTitle>
+                                <CardTitle className="text-lg hover:underline cursor-pointer">
+                                    <Link href={`/dog/${dogId}/history?medicineId=${med.id}`}>
+                                        {med.name}
+                                    </Link>
+                                </CardTitle>
                                 <CardDescription>{med.strength}</CardDescription>
                             </div>
                             <Button
