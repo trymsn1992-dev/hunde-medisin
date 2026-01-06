@@ -148,7 +148,45 @@ export default function MedicinesPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
                 {medicines.map((med) => {
-                    const isPaused = med.currentPlan?.active === false && !!med.currentPlan?.paused_at
+                    const plan = med.currentPlan
+                    const isPaused = plan?.active === false && !!plan?.paused_at
+
+                    // Calculate Display Info
+                    let infoString = ""
+                    if (plan) {
+                        const parts = []
+
+                        // 1. Duration / Days Left
+                        if (plan.end_date) {
+                            const end = new Date(plan.end_date)
+                            const now = new Date()
+                            // If paused, we calculate remaining from paused_at
+                            const compareDate = isPaused && plan.paused_at ? new Date(plan.paused_at) : now
+
+                            const diffTime = end.getTime() - compareDate.getTime()
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+                            if (diffDays < 0) parts.push("Ferdig")
+                            else parts.push(`${diffDays} dager igjen`)
+                        } else {
+                            parts.push("Løpende")
+                        }
+
+                        // 2. Frequency
+                        if (plan.frequency_type === 'daily_times') {
+                            const count = plan.schedule_times?.length || 0
+                            parts.push(count === 1 ? "Daglig" : `${count}x daglig`)
+                        } else if (plan.frequency_type === 'as_needed') {
+                            parts.push("Ved behov")
+                        } else {
+                            parts.push("Fast intervall")
+                        }
+
+                        // 3. Dose
+                        if (plan.dose_text) parts.push(plan.dose_text)
+
+                        infoString = parts.join(" - ")
+                    }
 
                     return (
                         <Card key={med.id} className={isPaused ? "opacity-75 border-dashed" : ""}>
@@ -166,7 +204,14 @@ export default function MedicinesPage() {
                                             </span>
                                         )}
                                     </div>
-                                    <CardDescription>{med.strength}</CardDescription>
+                                    <CardDescription>
+                                        {med.strength}
+                                        {infoString && (
+                                            <span className="block mt-1 text-primary/80 font-medium">
+                                                {infoString}
+                                            </span>
+                                        )}
+                                    </CardDescription>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     {/* PAUSE / RESUME BUTTON */}
