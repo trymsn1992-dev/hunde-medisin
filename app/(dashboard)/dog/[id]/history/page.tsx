@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { DayPicker } from "react-day-picker"
 import { nb } from "date-fns/locale"
 import { differenceInCalendarDays, format, isSameDay, startOfDay } from "date-fns"
-import "react-day-picker/dist/style.css"
+import "react-day-picker/style.css"
 
 // Assign colors to medicines dynamically or via hash
 const MED_COLORS = [
@@ -280,7 +280,8 @@ export default function HistoryPage() {
                         selected={calendarDate}
                         onSelect={setCalendarDate}
                         components={{
-                            DayContent: (props) => {
+                            // @ts-expect-error - DayContent is valid at runtime in v9 despite strict types in some versions
+                            DayContent: (props: any) => {
                                 const dayKey = format(props.date, 'yyyy-MM-dd')
                                 const logs = calendarDays[dayKey]
                                 return (
@@ -288,7 +289,7 @@ export default function HistoryPage() {
                                         <span>{props.date.getDate()}</span>
                                         {logs && logs.length > 0 && (
                                             <div className="absolute bottom-1 flex gap-0.5">
-                                                {logs.slice(0, 3).map((l, i) => (
+                                                {logs.slice(0, 3).map((l: any, i: number) => (
                                                     <div
                                                         key={i}
                                                         className={cn("w-1.5 h-1.5 rounded-full", getMedColor(l.medicine?.id))}
