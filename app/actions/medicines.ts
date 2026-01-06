@@ -12,6 +12,7 @@ export async function createMedicine(data: {
     duration: string // "7" or empty
     doseText: string
     times: string[]
+    color?: string
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -25,7 +26,8 @@ export async function createMedicine(data: {
                 dog_id: data.dogId,
                 name: data.name,
                 strength: data.strength,
-                notes: data.notes
+                notes: data.notes,
+                color: data.color
             })
             .select()
             .single()

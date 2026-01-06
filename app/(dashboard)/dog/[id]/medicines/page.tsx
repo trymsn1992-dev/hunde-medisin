@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { deleteMedicine, pauseMedicine, resumeMedicine } from "@/app/actions/medicines"
 import { Plus, ArrowLeft, Trash2, Pause, Play } from "lucide-react"
+import { MedicineBadge } from "@/components/medicine-badge"
 
 export default function MedicinesPage() {
     const params = useParams()
@@ -200,11 +201,11 @@ export default function MedicinesPage() {
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <CardTitle className="text-lg hover:underline cursor-pointer">
-                                            <Link href={`/dog/${dogId}/history?medicineId=${med.id}`}>
-                                                {med.name}
-                                            </Link>
-                                        </CardTitle>
+                                        {/* Use MedicineBadge instead of plain text */}
+                                        <Link href={`/dog/${dogId}/history?medicineId=${med.id}`} className="hover:opacity-80 transition-opacity block mb-1">
+                                            <MedicineBadge medicine={med} className="text-base" />
+                                        </Link>
+
                                         {isPaused && (
                                             <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium">
                                                 Pauset

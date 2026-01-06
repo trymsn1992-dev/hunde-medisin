@@ -7,8 +7,10 @@ import { createMedicine } from "@/app/actions/medicines"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Clock } from "lucide-react"
+import { ArrowLeft, Clock, Palette } from "lucide-react"
 import { cn } from "@/lib/utils"
+// Import colors
+import { MED_COLORS } from "@/lib/medicine-utils"
 
 export default function ManualEntryPage() {
     const params = useParams()
@@ -24,6 +26,7 @@ export default function ManualEntryPage() {
     const [duration, setDuration] = useState("") // e.g. "7"
     const [notes, setNotes] = useState("")
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]) // YYYY-MM-DD
+    const [selectedColor, setSelectedColor] = useState<string>("")
 
     // Schedule States
     // Simplified: Checkboxes for standard times
@@ -77,7 +80,8 @@ export default function ManualEntryPage() {
                 startDate,
                 duration,
                 doseText,
-                times
+                times,
+                color: selectedColor || undefined
             })
 
             if (!result.success) {
@@ -114,6 +118,29 @@ export default function ManualEntryPage() {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Medisinnavn</label>
                                 <Input placeholder="f.eks. Rimadyl" value={name} onChange={e => setName(e.target.value)} required />
+                            </div>
+
+                            {/* Color Picker */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium flex items-center gap-2">
+                                    <Palette className="h-4 w-4" /> Fargekode
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {MED_COLORS.map(c => (
+                                        <button
+                                            key={c}
+                                            type="button"
+                                            onClick={() => setSelectedColor(c === selectedColor ? "" : c)}
+                                            className={cn(
+                                                "h-8 w-8 rounded-full transition-all ring-offset-2 focus:outline-none focus:ring-2",
+                                                c,
+                                                selectedColor === c ? "ring-2 ring-foreground scale-110 shadow-lg" : "ring-transparent hover:scale-105 opacity-70 hover:opacity-100"
+                                            )}
+                                            title={c}
+                                        />
+                                    ))}
+                                </div>
+                                <p className="text-xs text-muted-foreground">Velg en farge for å identifisere medisinen raskere.</p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

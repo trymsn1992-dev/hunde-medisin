@@ -27,15 +27,14 @@ export async function scanMedicationImage(imageBase64: string): Promise<Medicati
                 {
                     role: "system",
                     content: `You are an expert pharmacist assistant analyzing NORWEGIAN medication labels.
-                    The image might be rotated (vertical/horizontal). Please read the text regardless of orientation.
+                    The image is a cropped close-up of a medication package. It might be rotated.
                     Analyze the image and return a JSON object with the following fields:
-                    - name: The name of the medication (e.g., "Rimadyl", "Apoquel", "Bactrim"). Look for large bold text.
+                    - name: The name of the medication.
+                      - FIX TYPOS: If it reads "Rimady!", correct to "Rimadyl". If "Apoque!", correct to "Apoquel".
+                      - Look for large bold text.
                     - strength: The strength (e.g., "50mg", "400 mg / 80 mg").
-                    - category: The type/category of medicine in NORWEGIAN. infer this from the name or text.
+                    - category: The type/category of medicine in NORWEGIAN. infer from name/text.
                       - Examples: "Antibiotika", "Smertestillende", "Allergimedisin", "Betennelsesdempende", "Kosttilskudd", "Øyedråper".
-                      - If "Bactrim" -> "Antibiotika".
-                      - If "Rimadyl" -> "Smertestillende".
-                      - If "Apoquel" -> "Allergimedisin".
                     - dose_text: The instruction for A SINGLE DOSE. 
                       - If label says "1 tablett morgen og kveld", return "1 tablett".
                       - If label says "1/2 tablett", return "0.5 tablett".
@@ -54,11 +53,9 @@ export async function scanMedicationImage(imageBase64: string): Promise<Medicati
                         - "Middag" -> include "14:00"
                         - "Natt" -> include "22:00"
                       - If text says "1 gang daglig" or just "daglig" -> default to ["08:00"]
-                      - If text says "2 ganger daglig" (and no specific times) -> return ["08:00", "20:00"]
+                      - If text says "2 ganger daglig" -> return ["08:00", "20:00"]
                       - If text says "3 ganger daglig" -> return ["08:00", "14:00", "20:00"]
                       - If text says "4 ganger daglig" -> return ["08:00", "12:00", "16:00", "20:00"]
-                      - Combine found times + calculated times if context implies it.
-                      - If no time indications found at all, default to ["08:00"].
                       - Return sorted unique times.
 
                     Return ONLY raw JSON with no markdown formatting.`

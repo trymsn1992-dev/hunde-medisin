@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Calendar as CalendarIcon, List as ListIcon, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft, Calendar as CalendarIcon, List as ListIcon, ChevronLeft, ChevronRight, Activity, Heart, AlertCircle, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 // date-fns
 import { nb } from "date-fns/locale"
@@ -23,18 +23,9 @@ import {
     isSameDay,
     isToday
 } from "date-fns"
-
-// Assign colors to medicines dynamically or via hash
-const MED_COLORS = [
-    "bg-blue-500",
-    "bg-green-500",
-    "bg-purple-500",
-    "bg-orange-500",
-    "bg-red-500",
-    "bg-teal-500",
-    "bg-pink-500",
-    "bg-indigo-500",
-]
+import { getMedicineColor } from "@/lib/medicine-utils"
+import { MedicineBadge } from "@/components/medicine-badge"
+import { getHealthLogs, deleteHealthLog } from "@/app/actions/health"
 
 export default function HistoryPage() {
     const params = useParams()
@@ -43,7 +34,10 @@ export default function HistoryPage() {
 
     // State
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [allLogs, setAllLogs] = useState<any[]>([])
+    const [doseLogs, setDoseLogs] = useState<any[]>([])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [healthLogs, setHealthLogs] = useState<any[]>([])
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [medicines, setMedicines] = useState<any[]>([])
     const [selectedMedicine, setSelectedMedicine] = useState<string>("all")
@@ -53,6 +47,16 @@ export default function HistoryPage() {
     // Custom Calendar State
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+    const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set())
+
+    const toggleExpand = (id: string) => {
+        setExpandedLogs(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }
 
     const supabase = createClient()
 
@@ -67,9 +71,7 @@ export default function HistoryPage() {
                 .order('name')
             setMedicines(medData || [])
 
-            // 2. Logs 
-            // Note: For a full calendar we might need more data or pagination logic. 
-            // Currently limiting to 1000 to cover a good range.
+            // 2. Dose Logs 
             const { data: logData } = await supabase
                 .from('dose_logs')
                 .select(`
@@ -77,14 +79,18 @@ export default function HistoryPage() {
                     taken_at,
                     notes,
                     status,
-                    medicine:medicines(id, name),
+                    medicine:medicines(id, name, color),
                     taker:taken_by(full_name)
                 `)
                 .eq('dog_id', dogId)
                 .order('taken_at', { ascending: false })
-                .limit(1000)
+                .limit(500)
+            setDoseLogs(logData || [])
 
-            setAllLogs(logData || [])
+            // 3. Health Logs
+            const hLogs = await getHealthLogs(dogId)
+            setHealthLogs(hLogs || [])
+
             setLoading(false)
         }
         load()
@@ -95,18 +101,30 @@ export default function HistoryPage() {
         const medId = searchParams.get("medicineId")
         if (medId) setSelectedMedicine(medId)
     }, [searchParams])
+    const handleDeleteHealthLog = async (logId: string) => {
+        if (!confirm("Er du sikker på at du vil slette denne helseloggen?")) return
 
-    // Filter Logs
-    const filteredLogs = useMemo(() => {
-        return selectedMedicine === "all"
-            ? allLogs
-            : allLogs.filter(l => l.medicine?.id === selectedMedicine)
-    }, [selectedMedicine, allLogs])
+        const res = await deleteHealthLog(logId)
+        if (res.success) {
+            setHealthLogs(prev => prev.filter(h => h.id !== logId))
+        } else {
+            alert("Feil ved sletting: " + res.error)
+        }
+    }
 
-    // --- Stats Logic ---
+    // Filter Logs (Doses only, health logs are fundamentally different but could be filtered if we want "Health Only")
+    // For now, let's keep Health Logs always visible in "All" or "Calendar" view, but maybe hide in specific medicine filter?
+    // User probably wants to see context. Let's show everything if "All", otherwise filter doses.
+    const filteredDoseLogs = useMemo(() => {
+        if (selectedMedicine === "all") return doseLogs
+        if (selectedMedicine === "health_only") return []
+        return doseLogs.filter(l => l.medicine?.id === selectedMedicine)
+    }, [selectedMedicine, doseLogs])
+
+    // --- Stats Logic (Dose Only) ---
     const summaryStats = useMemo(() => {
-        if (selectedMedicine === 'all' || filteredLogs.length === 0) return null
-        const takenLogs = filteredLogs.filter(l => l.status === 'taken')
+        if (selectedMedicine === 'all' || filteredDoseLogs.length === 0) return null
+        const takenLogs = filteredDoseLogs.filter(l => l.status === 'taken')
         if (takenLogs.length === 0) return null
         const sorted = [...takenLogs].sort((a, b) => new Date(a.taken_at).getTime() - new Date(b.taken_at).getTime())
         const firstDate = new Date(sorted[0].taken_at)
@@ -123,13 +141,43 @@ export default function HistoryPage() {
             text: `Gitt ${freqText} siden ${firstDate.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short', year: 'numeric' })}`,
             count
         }
-    }, [filteredLogs, selectedMedicine])
+    }, [filteredDoseLogs, selectedMedicine])
 
-    // --- List View Grouping ---
-    const groupedLogs = useMemo(() => {
-        const groups: Record<string, typeof allLogs> = {}
-        filteredLogs.forEach(log => {
-            const date = new Date(log.taken_at)
+    // --- List View Grouping (Mix Doses and Health) ---
+    const combinedListLogs = useMemo(() => {
+        // Transform health logs to match a unified shape for sorting
+        const healthAsLogs = healthLogs.map(h => ({
+            id: h.id,
+            type: 'health',
+            timestamp: h.created_at, // Use created_at for sorting time, or date? Date is just YYYY-MM-DD. Let's use created_at if available or date + noon
+            data: h
+        }))
+
+        const dosesAsLogs = filteredDoseLogs.map(d => ({
+            id: d.id,
+            type: 'dose',
+            timestamp: d.taken_at,
+            data: d
+        }))
+
+        // If filtering by specific medicine, maybe we exclude health logs? 
+        // Or keep them for context? Let's exclude them if specific medicine selected to reduce noise, unless user asks.
+        let all;
+        if (selectedMedicine === 'all') {
+            all = [...dosesAsLogs, ...healthAsLogs]
+        } else if (selectedMedicine === 'health_only') {
+            all = [...healthAsLogs]
+        } else {
+            all = [...dosesAsLogs]
+        }
+
+        return all.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    }, [filteredDoseLogs, healthLogs, selectedMedicine])
+
+    const groupedListLogs = useMemo(() => {
+        const groups: Record<string, typeof combinedListLogs> = {}
+        combinedListLogs.forEach(log => {
+            const date = new Date(log.timestamp)
             const today = new Date()
             const yesterday = new Date()
             yesterday.setDate(yesterday.getDate() - 1)
@@ -140,8 +188,9 @@ export default function HistoryPage() {
             groups[key].push(log)
         })
         return groups
-    }, [filteredLogs])
-    const sortedGroups = Object.keys(groupedLogs).sort((a, b) => {
+    }, [combinedListLogs])
+
+    const sortedGroups = Object.keys(groupedListLogs).sort((a, b) => {
         if (a === "I dag") return -1; if (b === "I dag") return 1
         if (a === "I går") return -1; if (b === "I går") return 1
         const [d1, m1, y1] = a.split('.').map(Number); const [d2, m2, y2] = b.split('.').map(Number)
@@ -149,22 +198,27 @@ export default function HistoryPage() {
         return new Date(y2, m2 - 1, d2).getTime() - new Date(y1, m1 - 1, d1).getTime()
     })
 
-    // --- Calendar Helper Logic ---
-    const getMedColor = (medId: string) => {
-        const index = medicines.findIndex(m => m.id === medId)
-        if (index === -1) return "bg-gray-400"
-        return MED_COLORS[index % MED_COLORS.length]
-    }
-
+    // Calendar Data Map
     const calendarDaysMap = useMemo(() => {
-        const days: Record<string, any[]> = {}
-        filteredLogs.forEach(log => {
+        const days: Record<string, { doses: any[], health: any[] }> = {}
+
+        // Map Doses
+        filteredDoseLogs.forEach(log => {
             const dayKey = format(new Date(log.taken_at), 'yyyy-MM-dd')
-            if (!days[dayKey]) days[dayKey] = []
-            days[dayKey].push(log)
+            if (!days[dayKey]) days[dayKey] = { doses: [], health: [] }
+            days[dayKey].doses.push(log)
         })
+
+        // Map Health (Only if viewing all or health only)
+        if (selectedMedicine === 'all' || selectedMedicine === 'health_only') {
+            healthLogs.forEach(log => {
+                const dayKey = log.date // YYYY-MM-DD
+                if (!days[dayKey]) days[dayKey] = { doses: [], health: [] }
+                days[dayKey].health.push(log)
+            })
+        }
         return days
-    }, [filteredLogs])
+    }, [filteredDoseLogs, healthLogs, selectedMedicine])
 
     // Generate Grid Days
     const calendarGrid = useMemo(() => {
@@ -194,6 +248,7 @@ export default function HistoryPage() {
                         onChange={(e) => setSelectedMedicine(e.target.value)}
                     >
                         <option value="all">Vis alt</option>
+                        <option value="health_only">Helselogg</option>
                         {medicines.map(m => (
                             <option key={m.id} value={m.id}>{m.name}</option>
                         ))}
@@ -243,7 +298,7 @@ export default function HistoryPage() {
 
                     {loading ? <div className="text-center py-10">Laster...</div> : (
                         <div className="space-y-8 pb-10">
-                            {filteredLogs.length === 0 ? (
+                            {combinedListLogs.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-10">Ingen loggføringer funnet.</p>
                             ) : (
                                 sortedGroups.map(groupKey => (
@@ -251,31 +306,102 @@ export default function HistoryPage() {
                                         <h3 className="font-semibold text-lg text-muted-foreground border-b pb-2 mb-2 sticky top-0 bg-background z-10">
                                             {groupKey}
                                         </h3>
-                                        {groupedLogs[groupKey].map(log => {
-                                            const bgClass = getMedColor(log.medicine?.id)
-                                            return (
-                                                <div key={log.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="font-bold text-lg">
-                                                                {new Date(log.taken_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}
-                                                            </span>
-                                                            {/* Colored Badge Style for List View */}
-                                                            <span className={cn(
-                                                                "font-medium truncate px-2 py-0.5 rounded text-white shadow-sm text-sm",
-                                                                bgClass,
-                                                                "bg-opacity-90"
-                                                            )}>
-                                                                {log.medicine?.name || "Ukjent medisin"}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                            <span>{log.taker?.full_name?.split(' ')[0]}</span>
-                                                            {log.notes && <span className="italic truncate">- &quot;{log.notes}&quot;</span>}
+                                        {groupedListLogs[groupKey].map(item => {
+                                            if (item.type === 'dose') {
+                                                const log = item.data
+                                                return (
+                                                    <div key={log.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-bold text-lg">
+                                                                    {new Date(log.taken_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                                <MedicineBadge medicine={log.medicine} size="sm" className="ml-2" />
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                                <span>{log.taker?.full_name?.split(' ')[0]}</span>
+                                                                {log.notes && <span className="italic truncate">- &quot;{log.notes}&quot;</span>}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )
+                                                )
+                                            } else {
+                                                const log = item.data
+                                                const isExpanded = expandedLogs.has(log.id)
+                                                // Simplified Health Card in List
+                                                return (
+                                                    <div
+                                                        key={log.id}
+                                                        onClick={() => toggleExpand(log.id)}
+                                                        className={cn(
+                                                            "flex items-start gap-4 p-3 rounded-lg border transition-all cursor-pointer",
+                                                            isExpanded ? "bg-pink-50 dark:bg-pink-900/20 border-pink-200" : "bg-pink-50/50 dark:bg-pink-900/10 border-pink-100 dark:border-pink-900/20"
+                                                        )}
+                                                    >
+                                                        <div className="h-8 w-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
+                                                            <Heart className="h-4 w-4" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-bold">Helselogg</span>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            handleDeleteHealthLog(log.id)
+                                                                        }}
+                                                                        className="p-1 hover:bg-red-100 rounded text-red-400 hover:text-red-600 transition-colors"
+                                                                    >
+                                                                        <Trash2 className="h-3 w-3" />
+                                                                    </button>
+                                                                </div>
+                                                                <span className="text-xs text-muted-foreground">Logget {new Date(log.created_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-2 text-xs">
+                                                                {isExpanded ? (
+                                                                    <>
+                                                                        <span className={cn("px-2 py-0.5 rounded-full", log.is_playful ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                                                                            Leken: {log.is_playful ? "Ja" : "Nei"}
+                                                                        </span>
+                                                                        <span className={cn("px-2 py-0.5 rounded-full", log.wants_walk ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                                                                            Turlyst: {log.wants_walk ? "Ja" : "Nei"}
+                                                                        </span>
+                                                                        <span className={cn("px-2 py-0.5 rounded-full", log.is_hungry ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                                                                            Matlyst: {log.is_hungry ? "Ja" : "Nei"}
+                                                                        </span>
+                                                                        <span className={cn("px-2 py-0.5 rounded-full", log.is_thirsty ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                                                                            Tørst: {log.is_thirsty ? "Ja" : "Nei"}
+                                                                        </span>
+                                                                        <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                                                                            Avføring: {log.stool || "Ikke registrert"}
+                                                                        </span>
+                                                                        {log.itch_locations && log.itch_locations.length > 0 && (
+                                                                            <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                                                                                Kløe: {log.itch_locations.join(', ')}
+                                                                            </span>
+                                                                        )}
+                                                                        {log.notes && <div className="w-full mt-2 p-2 bg-white/50 rounded text-xs italic">"{log.notes}"</div>}
+                                                                        <div className="w-full text-right text-[10px] text-pink-600 font-semibold mt-1">Klikk for å se mindre</div>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        {!log.is_playful && <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Ikke leken</span>}
+                                                                        {!log.wants_walk && <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Vil ikke gå tur</span>}
+                                                                        {!log.is_hungry && <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Ingen matlyst</span>}
+                                                                        {!log.is_thirsty && <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Ikke tørst</span>}
+
+                                                                        {log.stool && log.stool !== 'Normal' && <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Avføring: {log.stool}</span>}
+                                                                        {log.itch_locations && log.itch_locations.length > 0 && (
+                                                                            <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Kløe: {log.itch_locations.join(', ')}</span>
+                                                                        )}
+                                                                        <div className="w-full text-right text-[10px] text-pink-400 font-semibold mt-1">Klikk for se full logg</div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            }
                                         })}
                                     </section>
                                 ))
@@ -311,49 +437,74 @@ export default function HistoryPage() {
                     </div>
 
                     {/* Calendar Cells */}
-                    <div className="grid grid-cols-7 auto-rows-fr bg-muted/20 gap-px border-b flex-1 overflow-y-auto min-h-0">
+                    <div className="grid grid-cols-7 bg-muted/30 gap-px border-b flex-1 overflow-y-auto min-h-0 shadow-inner">
                         {calendarGrid.map((date, idx) => {
                             const isCurrentMonth = isSameMonth(date, currentMonth)
                             const dateKey = format(date, 'yyyy-MM-dd')
-                            const logs = calendarDaysMap[dateKey] || []
+                            const dayData = calendarDaysMap[dateKey] || { doses: [], health: [] }
                             const isSelected = selectedDate && isSameDay(date, selectedDate)
+
+                            const hasHealthIssues = dayData.health.some((h: any) =>
+                                (h.stool && h.stool !== 'Normal') ||
+                                (h.itch_locations && h.itch_locations.length > 0) ||
+                                !h.is_playful || !h.wants_walk || !h.is_hungry || !h.is_thirsty
+                            )
 
                             return (
                                 <div
                                     key={dateKey}
                                     onClick={() => setSelectedDate(date)}
                                     className={cn(
-                                        "bg-background p-1 flex flex-col relative transition-colors cursor-pointer hover:bg-muted/50 overflow-hidden",
-                                        !isCurrentMonth && "bg-muted/5 text-muted-foreground/50",
-                                        isSelected && "ring-2 ring-primary inset-0 z-10"
+                                        "bg-background p-1.5 flex flex-col relative transition-all duration-200 cursor-pointer hover:bg-accent/40 min-h-[120px] sm:min-h-[140px] group",
+                                        !isCurrentMonth && "bg-muted/5 opacity-50",
+                                        isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5 shadow-md"
                                     )}
                                 >
-                                    <div className={cn("text-xs font-semibold p-1 mb-1 ml-auto w-6 h-6 flex items-center justify-center rounded-full shrink-0",
-                                        isToday(date) && "bg-primary text-primary-foreground"
-                                    )}>
-                                        {format(date, 'd')}
+                                    <div className="flex justify-between items-center mb-1.5">
+                                        {/* Date Number */}
+                                        <div className={cn(
+                                            "text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full transition-transform group-hover:scale-110",
+                                            isToday(date) ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
+                                        )}>
+                                            {format(date, 'd')}
+                                        </div>
+
+                                        {/* Health Indicators */}
+                                        <div className="flex gap-1">
+                                            {hasHealthIssues && (
+                                                <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_5px_rgba(239,68,68,0.5)]" title="Helseavvik" />
+                                            )}
+                                        </div>
                                     </div>
 
-                                    {/* Events List */}
-                                    <div className="flex-1 flex flex-col gap-1 overflow-y-auto w-full">
-                                        {logs.map(log => {
-                                            const bgClass = getMedColor(log.medicine?.id)
+                                    {/* Events List (Doses) */}
+                                    <div className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar pt-1">
+                                        {dayData.doses.slice(0, 6).map(log => {
+                                            const bgClass = getMedicineColor(log.medicine?.id, log.medicine?.color)
+                                            const isMissed = log.status === 'missed'
                                             return (
                                                 <div
                                                     key={log.id}
                                                     className={cn(
-                                                        "flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] sm:text-xs border border-transparent transition-opacity w-full text-white shadow-sm",
+                                                        "flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[9px] sm:text-[10px] font-bold border-l-2 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-all hover:translate-x-0.5",
                                                         bgClass,
-                                                        "bg-opacity-90 hover:bg-opacity-100"
+                                                        "bg-opacity-10 text-foreground border-opacity-100 dark:bg-opacity-20",
+                                                        isMissed && "opacity-60 grayscale-[0.5] border-dashed"
                                                     )}
-                                                    title={`${log.medicine?.name} - ${format(new Date(log.taken_at), 'HH:mm')}`}
+                                                    style={{ borderLeftColor: 'currentColor' }}
                                                 >
-                                                    <span className="truncate font-medium flex-1 text-left drop-shadow-sm">
-                                                        {log.medicine?.name}
+                                                    <span className="truncate flex-1">
+                                                        {isMissed && "⚠️ "}{log.medicine?.name}
                                                     </span>
+                                                    <span className="opacity-60 font-medium shrink-0 tabular-nums">{format(new Date(log.taken_at), 'HH:mm')}</span>
                                                 </div>
                                             )
                                         })}
+                                        {dayData.doses.length > 6 && (
+                                            <div className="text-[9px] font-black text-primary/70 text-center pt-0.5 tracking-tighter uppercase italic">
+                                                +{dayData.doses.length - 6} til...
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )
@@ -362,38 +513,116 @@ export default function HistoryPage() {
 
                     {/* Selected Date Details (Footer) */}
                     {selectedDate && (
-                        <div className="p-3 bg-muted/10 border-t shrink-0">
-                            <h3 className="font-semibold mb-2 text-sm flex items-center justify-between">
+                        <div className="p-3 bg-muted/10 border-t shrink-0 max-h-[40vh] overflow-auto">
+                            <h3 className="font-semibold mb-2 text-sm flex items-center justify-between sticky top-0 bg-transparent backdrop-blur-sm z-10 pb-2">
                                 <span>Detaljer {format(selectedDate, 'd. MMMM', { locale: nb })}</span>
                                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setSelectedDate(null)}>✕</Button>
                             </h3>
                             {(() => {
                                 const dayKey = format(selectedDate, 'yyyy-MM-dd')
-                                const logs = calendarDaysMap[dayKey]
-                                if (!logs || logs.length === 0) return <p className="text-xs text-muted-foreground">Ingen hendelser.</p>
+                                const dayData = calendarDaysMap[dayKey]
+                                const hasDoses = dayData?.doses.length > 0
+                                const hasHealth = dayData?.health.length > 0
+
+                                if (!hasDoses && !hasHealth) return <p className="text-xs text-muted-foreground">Ingen hendelser.</p>
+
                                 return (
-                                    <div className="flex flex-col gap-2 max-h-[150px] overflow-auto">
-                                        {logs.map(log => {
-                                            const bgClass = getMedColor(log.medicine?.id)
+                                    <div className="space-y-4">
+                                        {/* Health Section */}
+                                        {hasHealth && dayData.health.map((h: any) => {
+                                            const isExpanded = expandedLogs.has(h.id)
                                             return (
-                                                <div key={log.id} className="flex items-center gap-2 px-3 py-2 bg-background border rounded-md shadow-sm text-sm">
-                                                    {/* Consistent Badge Style */}
-                                                    <span className={cn(
-                                                        "font-medium px-2 py-0.5 rounded text-white shadow-sm flex-1 truncate",
-                                                        bgClass,
-                                                        "bg-opacity-90"
-                                                    )}>
-                                                        {log.medicine?.name}
-                                                    </span>
-                                                    <span className="text-muted-foreground text-xs">{format(new Date(log.taken_at), 'HH:mm')}</span>
-                                                    {log.taker?.full_name && (
-                                                        <span className="text-muted-foreground text-xs border-l pl-2 ml-2">
-                                                            {log.taker.full_name.split(' ')[0]}
-                                                        </span>
+                                                <div
+                                                    key={h.id}
+                                                    onClick={() => toggleExpand(h.id)}
+                                                    className={cn(
+                                                        "bg-pink-50/50 dark:bg-pink-900/10 border border-pink-100 dark:border-pink-900/20 rounded-md p-3 text-sm space-y-2 cursor-pointer transition-colors",
+                                                        isExpanded && "bg-pink-50 border-pink-200"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center justify-between font-medium text-pink-700 dark:text-pink-300">
+                                                        <div className="flex items-center gap-2">
+                                                            <Heart className="h-4 w-4" /> Helselogg
+                                                        </div>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                handleDeleteHealthLog(h.id)
+                                                            }}
+                                                            className="p-1 hover:bg-black/5 rounded text-muted-foreground hover:text-red-600 transition-colors"
+                                                        >
+                                                            <Trash2 className="h-3 w-3" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2 text-xs">
+                                                        {isExpanded ? (
+                                                            <>
+                                                                <span className={cn("px-2 py-0.5 rounded", h.is_playful ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                                                                    Leken: {h.is_playful ? "Ja" : "Nei"}
+                                                                </span>
+                                                                <span className={cn("px-2 py-0.5 rounded", h.wants_walk ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                                                                    Turlyst: {h.wants_walk ? "Ja" : "Nei"}
+                                                                </span>
+                                                                <span className={cn("px-2 py-0.5 rounded", h.is_hungry ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                                                                    Matlyst: {h.is_hungry ? "Ja" : "Nei"}
+                                                                </span>
+                                                                <span className={cn("px-2 py-0.5 rounded", h.is_thirsty ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                                                                    Tørst: {h.is_thirsty ? "Ja" : "Nei"}
+                                                                </span>
+                                                                <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                                                                    Avføring: {h.stool || "Ikke registrert"}
+                                                                </span>
+                                                                {h.itch_locations && h.itch_locations.length > 0 && (
+                                                                    <div className="w-full bg-red-100 text-red-700 px-2 py-0.5 rounded mt-1">
+                                                                        Kløe: {h.itch_locations.join(", ")}
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                {!h.is_playful && <div className="p-1 px-2 rounded bg-red-100 text-red-700">Ikke leken</div>}
+                                                                {!h.wants_walk && <div className="p-1 px-2 rounded bg-red-100 text-red-700">Vil ikke gå tur</div>}
+                                                                {!h.is_hungry && <div className="p-1 px-2 rounded bg-red-100 text-red-700">Dårlig matlyst</div>}
+                                                                {!h.is_thirsty && <div className="p-1 px-2 rounded bg-red-100 text-red-700">Ikke tørst</div>}
+
+                                                                {h.stool && h.stool !== 'Normal' && (
+                                                                    <div className="col-span-2 p-1 px-2 rounded bg-amber-50 text-amber-800 border border-amber-100 w-full">
+                                                                        Avføring: <strong>{h.stool}</strong>
+                                                                    </div>
+                                                                )}
+                                                                {h.itch_locations && h.itch_locations.length > 0 && (
+                                                                    <div className="col-span-2 p-1 px-2 rounded bg-red-50 text-red-800 border border-red-100 w-full">
+                                                                        Kløe: <strong>{h.itch_locations.join(", ")}</strong>
+                                                                    </div>
+                                                                )}
+                                                                <div className="w-full text-right text-[10px] text-pink-400 font-semibold mt-1 uppercase">Klikk for alt</div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    {h.notes && (
+                                                        <p className="text-xs italic border-t pt-2 mt-2 text-muted-foreground">"{h.notes}"</p>
                                                     )}
                                                 </div>
                                             )
                                         })}
+
+                                        {/* Doses Section */}
+                                        {hasDoses && (
+                                            <div className="space-y-2">
+                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Medisiner</h4>
+                                                {dayData.doses.map((log: any) => (
+                                                    <div key={log.id} className="flex items-center gap-2 px-3 py-2 bg-background border rounded-md shadow-sm text-sm">
+                                                        <MedicineBadge medicine={log.medicine} className="flex-1" />
+                                                        <span className="text-muted-foreground text-xs">{format(new Date(log.taken_at), 'HH:mm')}</span>
+                                                        {log.taker?.full_name && (
+                                                            <span className="text-muted-foreground text-xs border-l pl-2 ml-2">
+                                                                {log.taker.full_name.split(' ')[0]}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )
                             })()}
