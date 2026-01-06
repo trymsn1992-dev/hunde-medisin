@@ -6,8 +6,8 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { deleteMedicine } from "@/app/actions/medicines"
-import { Plus, ArrowLeft, Trash2 } from "lucide-react"
+import { deleteMedicine, pauseMedicine, resumeMedicine } from "@/app/actions/medicines"
+import { Plus, ArrowLeft, Trash2, Pause, Play } from "lucide-react"
 
 export default function MedicinesPage() {
     const params = useParams()

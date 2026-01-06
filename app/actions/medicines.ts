@@ -126,13 +126,45 @@ export async function createMedicine(data: {
     }
 }
 
-revalidatePath('/', 'layout')
-return { success: true }
+export async function deleteMedicine(id: string) {
+    const supabase = await createClient()
+
+    // Verify auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+        throw new Error("Unauthorized")
+    }
+
+    try {
+        // 1. Delete associated logs explicitly (since schema is ON DELETE SET NULL)
+        const { error: logsError } = await supabase
+            .from('dose_logs')
+            .delete()
+            .eq('medicine_id', id)
+
+        if (logsError) {
+            console.error("Error deleting logs:", logsError)
+            throw logsError
+        }
+
+        // 2. Delete the medicine (cascades to plans)
+        const { error } = await supabase
+            .from('medicines')
+            .delete()
+            .eq('id', id)
+
+        if (error) {
+            console.error("Supabase Delete Error:", error)
+            return { success: false, error: error.message || error.details || "Database error" }
+        }
+
+        revalidatePath('/', 'layout')
+        return { success: true }
     } catch (error: unknown) {
-    console.error("Delete Action Error:", error)
-    const message = error instanceof Error ? error.message : "Failed to delete medicine"
-    return { success: false, error: message }
-}
+        console.error("Delete Action Error:", error)
+        const message = error instanceof Error ? error.message : "Failed to delete medicine"
+        return { success: false, error: message }
+    }
 }
 
 export async function pauseMedicine(medicineId: string, pauseDate: string) {
