@@ -42,6 +42,14 @@ export default function MedicinesPage() {
             return { ...m, currentPlan: latestPlan }
         }) || []
 
+        // DEBUG: Inspiser hva vi faktisk får tilbake
+        if (mapped.length > 0) {
+            const p = mapped[0].currentPlan
+            if (p) {
+                alert(`DEBUG DATA:\nActive: ${p.active}\nPausedAt: ${p.paused_at}`)
+            }
+        }
+
         setMedicines(mapped)
         router.refresh()
     }
