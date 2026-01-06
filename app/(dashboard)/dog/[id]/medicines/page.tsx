@@ -30,14 +30,14 @@ export default function MedicinesPage() {
             .from('medicines')
             .select(`
                 *,
-                plans:medication_plans(id, active, paused_at, end_date, dose_text, frequency_type, schedule_times)
+                plans:medication_plans(id, active, paused_at, end_date, dose_text, frequency_type, schedule_times, created_at)
             `)
             .eq('dog_id', dogId)
 
         // Transform to attach "currentPlan" convenience
         const mapped = data?.map(m => {
             // Find latest created plan
-            const latestPlan = m.plans?.sort((a: any, b: any) => b.id.localeCompare(a.id))[0]
+            const latestPlan = m.plans?.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
             return { ...m, currentPlan: latestPlan }
         }) || []
 
