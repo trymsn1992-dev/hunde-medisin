@@ -1,13 +1,29 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Calendar as CalendarIcon, List as ListIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { DayPicker } from "react-day-picker"
+import { nb } from "date-fns/locale"
+import { differenceInCalendarDays, format, isSameDay, startOfDay } from "date-fns"
+import "react-day-picker/dist/style.css"
+
+// Assign colors to medicines dynamically or via hash
+const MED_COLORS = [
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-purple-500",
+    "bg-orange-500",
+    "bg-red-500",
+    "bg-teal-500",
+    "bg-pink-500",
+    "bg-indigo-500",
+]
 
 export default function HistoryPage() {
     const params = useParams()
@@ -21,6 +37,8 @@ export default function HistoryPage() {
     const [medicines, setMedicines] = useState<any[]>([])
     const [selectedMedicine, setSelectedMedicine] = useState<string>("all")
     const [loading, setLoading] = useState(true)
+    const [view, setView] = useState<'list' | 'calendar'>('list')
+    const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date())
 
     const supabase = createClient()
 
@@ -35,7 +53,7 @@ export default function HistoryPage() {
                 .order('name')
             setMedicines(medData || [])
 
-            // 2. All logs (limit 100 for now)
+            // 2. All logs (limit 500 for calendar population)
             const { data: logData } = await supabase
                 .from('dose_logs')
                 .select(`
@@ -48,7 +66,7 @@ export default function HistoryPage() {
                 `)
                 .eq('dog_id', dogId)
                 .order('taken_at', { ascending: false })
-                .limit(100)
+                .limit(500)
 
             setAllLogs(logData || [])
             setLoading(false)
@@ -64,42 +82,91 @@ export default function HistoryPage() {
         }
     }, [searchParams])
 
-    // Derived state: Filtered Logs
-    const filteredLogs = selectedMedicine === "all"
-        ? allLogs
-        : allLogs.filter(l => l.medicine?.id === selectedMedicine)
+    // Derived state: Filtered Logs for List/Stats
+    const filteredLogs = useMemo(() => {
+        return selectedMedicine === "all"
+            ? allLogs
+            : allLogs.filter(l => l.medicine?.id === selectedMedicine)
+    }, [selectedMedicine, allLogs])
 
-    // Group by Date
-    const groupedLogs: Record<string, typeof allLogs> = {}
-    filteredLogs.forEach(log => {
-        const date = new Date(log.taken_at)
-        const today = new Date()
-        const yesterday = new Date()
-        yesterday.setDate(yesterday.getDate() - 1)
+    // Stats Calculation
+    const summaryStats = useMemo(() => {
+        if (selectedMedicine === 'all' || filteredLogs.length === 0) return null
 
-        let key = date.toLocaleDateString('nb-NO') // Default dd.mm.yyyy
+        // Count only taken
+        const takenLogs = filteredLogs.filter(l => l.status === 'taken')
+        if (takenLogs.length === 0) return null
 
-        if (date.toDateString() === today.toDateString()) key = "I dag"
-        else if (date.toDateString() === yesterday.toDateString()) key = "I går"
+        // Sort asc for date calc
+        const sorted = [...takenLogs].sort((a, b) => new Date(a.taken_at).getTime() - new Date(b.taken_at).getTime())
+        const firstDate = new Date(sorted[0].taken_at)
+        const daysDiff = differenceInCalendarDays(new Date(), firstDate) || 1
 
-        if (!groupedLogs[key]) groupedLogs[key] = []
-        groupedLogs[key].push(log)
+        const count = takenLogs.length
+        const perDay = count / daysDiff
+
+        let freqText = `ca. ${perDay.toFixed(1)} ganger daglig`
+        if (Math.abs(perDay - 1) < 0.2) freqText = "én gang daglig"
+        else if (Math.abs(perDay - 2) < 0.2) freqText = "to ganger daglig"
+        else if (perDay < 0.5) freqText = "sjeldnere enn daglig"
+
+        return {
+            text: `Gitt ${freqText} siden ${firstDate.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+            count
+        }
+    }, [filteredLogs, selectedMedicine])
+
+    // Group by Date for List View
+    const groupedLogs = useMemo(() => {
+        const groups: Record<string, typeof allLogs> = {}
+        filteredLogs.forEach(log => {
+            const date = new Date(log.taken_at)
+            const today = new Date()
+            const yesterday = new Date()
+            yesterday.setDate(yesterday.getDate() - 1)
+
+            let key = date.toLocaleDateString('nb-NO')
+            if (date.toDateString() === today.toDateString()) key = "I dag"
+            else if (date.toDateString() === yesterday.toDateString()) key = "I går"
+
+            if (!groups[key]) groups[key] = []
+            groups[key].push(log)
+        })
+        return groups
+    }, [filteredLogs])
+
+    // Sort keys for List View
+    const sortedGroups = Object.keys(groupedLogs).sort((a, b) => {
+        if (a === "I dag") return -1
+        if (b === "I dag") return 1
+        if (a === "I går") return -1
+        if (b === "I går") return 1
+        const [d1, m1, y1] = a.split('.').map(Number)
+        const [d2, m2, y2] = b.split('.').map(Number)
+        // Parse manually or fallback logic
+        if (!y1) return 0 // safety
+        return new Date(y2, m2 - 1, d2).getTime() - new Date(y1, m1 - 1, d1).getTime()
     })
 
-    const sortedGroups = Object.keys(groupedLogs)
-        // Sort keys logic: "I dag" first, "I går" second, then dates descending
-        .sort((a, b) => {
-            if (a === "I dag") return -1
-            if (b === "I dag") return 1
-            if (a === "I går") return -1
-            if (b === "I går") return 1
-            // Parse dd.mm.yyyy
-            const [d1, m1, y1] = a.split('.').map(Number)
-            const [d2, m2, y2] = b.split('.').map(Number)
-            const dateA = new Date(y1, m1 - 1, d1).getTime()
-            const dateB = new Date(y2, m2 - 1, d2).getTime()
-            return dateB - dateA
+    // Calendar Helpers
+    const getMedColor = (medId: string) => {
+        const index = medicines.findIndex(m => m.id === medId)
+        if (index === -1) return "bg-gray-400"
+        return MED_COLORS[index % MED_COLORS.length]
+    }
+
+    // Filter logs for Calendar: Always show ALL logs in calendar, but dim non-selected?
+    // Actually, usually calendar shows everything, but if filter is active, maybe only show those dots.
+    // Let's use `filteredLogs` for the calendar dots as well to match user expectation.
+    const calendarDays = useMemo(() => {
+        const days: Record<string, any[]> = {} // YYYY-MM-DD -> logs
+        filteredLogs.forEach(log => {
+            const dayKey = format(new Date(log.taken_at), 'yyyy-MM-dd')
+            if (!days[dayKey]) days[dayKey] = []
+            days[dayKey].push(log)
         })
+        return days
+    }, [filteredLogs])
 
     return (
         <div className="space-y-6">
@@ -111,9 +178,9 @@ export default function HistoryPage() {
                     <h1 className="text-2xl font-bold">Historikk</h1>
                 </div>
 
-                <div className="w-full sm:w-[200px]">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                     <select
-                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="flex-1 sm:w-[200px] h-10 px-3 rounded-md border border-input bg-background text-sm"
                         value={selectedMedicine}
                         onChange={(e) => setSelectedMedicine(e.target.value)}
                     >
@@ -122,12 +189,49 @@ export default function HistoryPage() {
                             <option key={m.id} value={m.id}>{m.name}</option>
                         ))}
                     </select>
+
+                    <div className="flex border rounded-md overflow-hidden">
+                        <Button
+                            variant={view === 'list' ? 'secondary' : 'ghost'}
+                            size="icon"
+                            onClick={() => setView('list')}
+                            className="rounded-none h-10 w-10"
+                        >
+                            <ListIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant={view === 'calendar' ? 'secondary' : 'ghost'}
+                            size="icon"
+                            onClick={() => setView('calendar')}
+                            className="rounded-none h-10 w-10"
+                        >
+                            <CalendarIcon className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
             </div>
 
+            {/* SMART SUMMARY HEADER */}
+            {summaryStats && (
+                <div className="bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-green-900 dark:text-green-100 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-green-200 dark:bg-green-700 flex items-center justify-center shrink-0">
+                            <CalendarIcon className="h-5 w-5 text-green-700 dark:text-white" />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-lg">{medicines.find(m => m.id === selectedMedicine)?.name}</p>
+                            <p className="opacity-90">{summaryStats.text}</p>
+                        </div>
+                    </div>
+                    <div className="hidden sm:block text-2xl font-bold opacity-50 px-4">
+                        {summaryStats.count} doser
+                    </div>
+                </div>
+            )}
+
             {loading ? (
                 <div className="text-center py-10 text-muted-foreground">Laster historikk...</div>
-            ) : (
+            ) : view === 'list' ? (
                 <div className="space-y-8">
                     {filteredLogs.length === 0 ? (
                         <p className="text-muted-foreground text-center py-10">Ingen historikk funnet for dette valget.</p>
@@ -153,12 +257,11 @@ export default function HistoryPage() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="ml-4 flex-shrink-0">
+                                        <div className="ml-4 flex-shrink-0 flex items-center gap-2">
+                                            <div className={cn("w-3 h-3 rounded-full", getMedColor(log.medicine?.id))} />
                                             <span className={cn(
                                                 "text-xs font-medium px-2 py-1 rounded",
-                                                log.status === 'taken' ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                                                    log.status === 'skipped' ? "bg-yellow-100 text-yellow-700" :
-                                                        "bg-red-100 text-red-700"
+                                                log.status === 'taken' ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700"
                                             )}>
                                                 {log.status === 'taken' ? 'Gitt' : log.status}
                                             </span>
@@ -168,6 +271,73 @@ export default function HistoryPage() {
                             </section>
                         ))
                     )}
+                </div>
+            ) : (
+                <div className="flex justify-center border rounded-xl p-4 bg-card shadow-sm">
+                    <DayPicker
+                        mode="single"
+                        locale={nb}
+                        selected={calendarDate}
+                        onSelect={setCalendarDate}
+                        components={{
+                            DayContent: (props) => {
+                                const dayKey = format(props.date, 'yyyy-MM-dd')
+                                const logs = calendarDays[dayKey]
+                                return (
+                                    <div className="relative w-full h-full flex items-center justify-center">
+                                        <span>{props.date.getDate()}</span>
+                                        {logs && logs.length > 0 && (
+                                            <div className="absolute bottom-1 flex gap-0.5">
+                                                {logs.slice(0, 3).map((l, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={cn("w-1.5 h-1.5 rounded-full", getMedColor(l.medicine?.id))}
+                                                    />
+                                                ))}
+                                                {logs.length > 3 && <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            }
+                        }}
+                        modifiersClassNames={{
+                            selected: "bg-primary text-primary-foreground font-bold rounded-md"
+                        }}
+                        className="p-3"
+                    />
+
+                    {/* Selected Day Details Panel could go here */}
+                </div>
+            )}
+
+            {/* Calendar Legend / Info when in calendar view could be added here */}
+            {view === 'calendar' && calendarDate && (
+                <div className="border rounded-xl p-4 bg-card/50">
+                    <h3 className="font-semibold mb-3">
+                        Hendelser {calendarDate.toLocaleDateString('nb-NO')}
+                    </h3>
+                    {(() => {
+                        const dayKey = format(calendarDate, 'yyyy-MM-dd')
+                        const logs = calendarDays[dayKey]
+                        if (!logs || logs.length === 0) return <p className="text-muted-foreground">Ingen registreringer denne dagen.</p>
+                        return (
+                            <div className="space-y-2">
+                                {logs.map(log => (
+                                    <div key={log.id} className="flex items-center gap-3 p-2 rounded-md border bg-background">
+                                        <div className={cn("w-3 h-3 rounded-full shrink-0", getMedColor(log.medicine?.id))} />
+                                        <div className="flex-1">
+                                            <div className="flex justify-between">
+                                                <span className="font-medium">{log.medicine?.name}</span>
+                                                <span className="text-sm text-muted-foreground">{new Date(log.taken_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                            {log.notes && <p className="text-xs text-muted-foreground italic">{log.notes}</p>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    })()}
                 </div>
             )}
         </div>
