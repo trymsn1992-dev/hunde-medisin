@@ -251,23 +251,32 @@ export default function HistoryPage() {
                                         <h3 className="font-semibold text-lg text-muted-foreground border-b pb-2 mb-2 sticky top-0 bg-background z-10">
                                             {groupKey}
                                         </h3>
-                                        {groupedLogs[groupKey].map(log => (
-                                            <div key={log.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-bold text-lg">
-                                                            {new Date(log.taken_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
-                                                        <span className="font-medium truncate">{log.medicine?.name || "Ukjent medisin"}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                        <span>{log.taker?.full_name?.split(' ')[0]}</span>
-                                                        {log.notes && <span className="italic truncate">- &quot;{log.notes}&quot;</span>}
+                                        {groupedLogs[groupKey].map(log => {
+                                            const bgClass = getMedColor(log.medicine?.id)
+                                            return (
+                                                <div key={log.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="font-bold text-lg">
+                                                                {new Date(log.taken_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                            {/* Colored Badge Style for List View */}
+                                                            <span className={cn(
+                                                                "font-medium truncate px-2 py-0.5 rounded text-white shadow-sm text-sm",
+                                                                bgClass,
+                                                                "bg-opacity-90"
+                                                            )}>
+                                                                {log.medicine?.name || "Ukjent medisin"}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                            <span>{log.taker?.full_name?.split(' ')[0]}</span>
+                                                            {log.notes && <span className="italic truncate">- &quot;{log.notes}&quot;</span>}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getMedColor(log.medicine?.id))} />
-                                            </div>
-                                        ))}
+                                            )
+                                        })}
                                     </section>
                                 ))
                             )}
@@ -329,20 +338,16 @@ export default function HistoryPage() {
                                     <div className="flex-1 flex flex-col gap-1 overflow-y-auto w-full">
                                         {logs.map(log => {
                                             const bgClass = getMedColor(log.medicine?.id)
-                                            // Extract base color name to handle text contrast roughly (imperfect but better than nothing)
-                                            // actually our colors are 500. So white text is good.
-                                            // We will use the `bgClass` directly on the div, and text-white.
                                             return (
                                                 <div
                                                     key={log.id}
                                                     className={cn(
                                                         "flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] sm:text-xs border border-transparent transition-opacity w-full text-white shadow-sm",
                                                         bgClass,
-                                                        "bg-opacity-90 hover:bg-opacity-100" // Tailwind v3/v4 might need specific opacity utils or just bg-blue-500
+                                                        "bg-opacity-90 hover:bg-opacity-100"
                                                     )}
                                                     title={`${log.medicine?.name} - ${format(new Date(log.taken_at), 'HH:mm')}`}
                                                 >
-                                                    {/* Remove dot, since whole bar is colored */}
                                                     <span className="truncate font-medium flex-1 text-left drop-shadow-sm">
                                                         {log.medicine?.name}
                                                     </span>
@@ -368,18 +373,27 @@ export default function HistoryPage() {
                                 if (!logs || logs.length === 0) return <p className="text-xs text-muted-foreground">Ingen hendelser.</p>
                                 return (
                                     <div className="flex flex-col gap-2 max-h-[150px] overflow-auto">
-                                        {logs.map(log => (
-                                            <div key={log.id} className="flex items-center gap-2 px-3 py-2 bg-background border rounded-md shadow-sm text-sm">
-                                                <div className={cn("w-2 h-2 rounded-full", getMedColor(log.medicine?.id))} />
-                                                <span className="font-medium flex-1">{log.medicine?.name}</span>
-                                                <span className="text-muted-foreground text-xs">{format(new Date(log.taken_at), 'HH:mm')}</span>
-                                                {log.taker?.full_name && (
-                                                    <span className="text-muted-foreground text-xs border-l pl-2 ml-2">
-                                                        {log.taker.full_name.split(' ')[0]}
+                                        {logs.map(log => {
+                                            const bgClass = getMedColor(log.medicine?.id)
+                                            return (
+                                                <div key={log.id} className="flex items-center gap-2 px-3 py-2 bg-background border rounded-md shadow-sm text-sm">
+                                                    {/* Consistent Badge Style */}
+                                                    <span className={cn(
+                                                        "font-medium px-2 py-0.5 rounded text-white shadow-sm flex-1 truncate",
+                                                        bgClass,
+                                                        "bg-opacity-90"
+                                                    )}>
+                                                        {log.medicine?.name}
                                                     </span>
-                                                )}
-                                            </div>
-                                        ))}
+                                                    <span className="text-muted-foreground text-xs">{format(new Date(log.taken_at), 'HH:mm')}</span>
+                                                    {log.taker?.full_name && (
+                                                        <span className="text-muted-foreground text-xs border-l pl-2 ml-2">
+                                                            {log.taker.full_name.split(' ')[0]}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 )
                             })()}
