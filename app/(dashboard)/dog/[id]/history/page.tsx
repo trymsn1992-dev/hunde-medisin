@@ -327,18 +327,28 @@ export default function HistoryPage() {
 
                                     {/* Events List */}
                                     <div className="flex-1 flex flex-col gap-1 overflow-y-auto w-full">
-                                        {logs.map(log => (
-                                            <div
-                                                key={log.id}
-                                                className="flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] sm:text-xs bg-muted/30 border border-transparent hover:border-border transition-colors w-full"
-                                                title={`${log.medicine?.name} - ${format(new Date(log.taken_at), 'HH:mm')}`}
-                                            >
-                                                <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", getMedColor(log.medicine?.id))} />
-                                                <span className="truncate font-medium flex-1 text-left">
-                                                    {log.medicine?.name}
-                                                </span>
-                                            </div>
-                                        ))}
+                                        {logs.map(log => {
+                                            const bgClass = getMedColor(log.medicine?.id)
+                                            // Extract base color name to handle text contrast roughly (imperfect but better than nothing)
+                                            // actually our colors are 500. So white text is good.
+                                            // We will use the `bgClass` directly on the div, and text-white.
+                                            return (
+                                                <div
+                                                    key={log.id}
+                                                    className={cn(
+                                                        "flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] sm:text-xs border border-transparent transition-opacity w-full text-white shadow-sm",
+                                                        bgClass,
+                                                        "bg-opacity-90 hover:bg-opacity-100" // Tailwind v3/v4 might need specific opacity utils or just bg-blue-500
+                                                    )}
+                                                    title={`${log.medicine?.name} - ${format(new Date(log.taken_at), 'HH:mm')}`}
+                                                >
+                                                    {/* Remove dot, since whole bar is colored */}
+                                                    <span className="truncate font-medium flex-1 text-left drop-shadow-sm">
+                                                        {log.medicine?.name}
+                                                    </span>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             )
