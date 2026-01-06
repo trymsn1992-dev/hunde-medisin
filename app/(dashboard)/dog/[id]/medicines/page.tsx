@@ -30,7 +30,7 @@ export default function MedicinesPage() {
             .from('medicines')
             .select(`
                 *,
-                plans:medication_plans(id, active, paused_at, end_date)
+                plans:medication_plans(id, active, paused_at, end_date, dose_text, frequency_type, schedule_times)
             `)
             .eq('dog_id', dogId)
 
