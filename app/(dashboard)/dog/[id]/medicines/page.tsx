@@ -83,16 +83,25 @@ export default function MedicinesPage() {
     }
 
     const handlePauseConfirm = async () => {
+        console.log("Confirming pause for:", pausingId, "at date:", pauseDate)
         if (!pausingId) return
         setActionLoading(true)
         try {
             // Convert local input back to ISO
             const dateObj = new Date(pauseDate)
             const isoString = dateObj.toISOString()
+            console.log("Sending ISO date:", isoString)
 
             const result = await pauseMedicine(pausingId, isoString)
+            console.log("Pause result:", result)
+
             if (!result.success) alert("Kunne ikke sette på pause: " + result.error)
-            else await fetchMeds()
+            else {
+                console.log("Fetching updated meds...")
+                await fetchMeds()
+            }
+        } catch (e) {
+            console.error("Frontend pause error:", e)
         } finally {
             setActionLoading(false)
             setPausingId(null)

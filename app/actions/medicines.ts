@@ -173,7 +173,9 @@ export async function pauseMedicine(medicineId: string, pauseDate: string) {
     if (!user) throw new Error("Unauthorized")
 
     try {
+        console.log("Attempting to pause medicine:", medicineId, "at", pauseDate)
         // Find the active plan for this medicine
+
         // We assume 1 active plan per medicine for V1
         const { data: plan, error: findError } = await supabase
             .from('medication_plans')
@@ -197,8 +199,12 @@ export async function pauseMedicine(medicineId: string, pauseDate: string) {
             })
             .eq('id', plan.id)
 
-        if (updateError) throw updateError
+        if (updateError) {
+            console.error("Update failed:", updateError)
+            throw updateError
+        }
 
+        console.log("Pause successful for plan:", plan.id)
         revalidatePath('/', 'layout')
         return { success: true }
     } catch (error: unknown) {
