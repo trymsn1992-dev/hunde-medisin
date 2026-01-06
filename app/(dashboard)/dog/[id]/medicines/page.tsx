@@ -42,11 +42,15 @@ export default function MedicinesPage() {
             return { ...m, currentPlan: latestPlan }
         }) || []
 
-        // DEBUG: Inspiser hva vi faktisk får tilbake
+        // DEBUG: Inspiser ALLE planer
         if (mapped.length > 0) {
-            const p = mapped[0].currentPlan
-            if (p) {
-                alert(`DEBUG DATA:\nActive: ${p.active}\nPausedAt: ${p.paused_at}`)
+            const med = mapped[0]
+            // Sjekk om vi fant medicine 0 eller om det var tilfeldig
+            if (med.plans && med.plans.length > 0) {
+                const debugStr = med.plans.map((p: any) =>
+                    `ID: ...${p.id.slice(-4)} | Act: ${p.active} | Pause: ${p.paused_at ? 'YES' : 'null'} | Created: ${p.created_at.slice(0, 10)}`
+                ).join('\n')
+                alert(`ALL PLANS for ${med.name}:\n${debugStr}`)
             }
         }
 
