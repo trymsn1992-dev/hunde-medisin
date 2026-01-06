@@ -191,60 +191,34 @@ export async function pauseMedicine(medicineId: string, pauseDate: string) {
             return { success: false, error: "No active plan found to pause" }
         }
 
-        const { error: updateError, count } = await supabase
+        const { error: updateError, data: updatedData } = await supabase
             .from('medication_plans')
             .update({
                 active: false,
                 paused_at: pauseDate
             })
             .eq('id', plan.id)
-            .select('id') // Need to select to get count back in some versions, or use count option
-
-        // Actually, update() returns count if you ask? 
-        // default select() returns data. 
-        // try: .update({...}).eq(...).select()
+            .select()
 
         if (updateError) {
             console.error("Update failed:", updateError)
             throw updateError
         }
 
-        // Check if data returned is empty?
-        // With .select(), 'data' will contain the updated rows.
-        // Let's modify the query structure above.
+        console.log("Updated rows:", updatedData?.length)
 
-        /* CORRECTED CALL */
-    } catch (e) { throw e } // just dummy to break out, see below
-}
-*/
-const { error: updateError, data: updatedData } = await supabase
-    .from('medication_plans')
-    .update({
-        active: false,
-        paused_at: pauseDate
-    })
-    .eq('id', plan.id)
-    .select()
+        if (!updatedData || updatedData.length === 0) {
+            console.error("Zero rows updated! RLS likely blocking.")
+            return { success: false, error: "Database update failed (RLS blocked?)" }
+        }
 
-if (updateError) {
-    console.error("Update failed:", updateError)
-    throw updateError
-}
-
-console.log("Updated rows:", updatedData?.length)
-
-if (!updatedData || updatedData.length === 0) {
-    console.error("Zero rows updated! RLS likely blocking.")
-    return { success: false, error: "Database update failed (RLS blocked?)" }
-}
-
-console.log("Pause successful for plan:", plan.id)
-revalidatePath('/', 'layout')
-return { success: true }
+        console.log("Pause successful for plan:", plan.id)
+        revalidatePath('/', 'layout')
+        return { success: true }
     } catch (error: unknown) {
-    console.error("Pause Error:", error)
-    return { success: false, error: "Failed to pause medicine" }
-}
+        console.error("Pause Error:", error)
+        return { success: false, error: "Failed to pause medicine" }
+    }
 }
 
 export async function resumeMedicine(medicineId: string, mode: 'remaining' | 'new') {
