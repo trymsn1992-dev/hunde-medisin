@@ -5,13 +5,24 @@ import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Calendar as CalendarIcon, List as ListIcon } from "lucide-react"
+import { ArrowLeft, Calendar as CalendarIcon, List as ListIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { DayPicker } from "react-day-picker"
+// date-fns
 import { nb } from "date-fns/locale"
-import { differenceInCalendarDays, format, isSameDay, startOfDay } from "date-fns"
-import "react-day-picker/style.css"
+import {
+    differenceInCalendarDays,
+    format,
+    startOfMonth,
+    endOfMonth,
+    startOfWeek,
+    endOfWeek,
+    eachDayOfInterval,
+    addMonths,
+    subMonths,
+    isSameMonth,
+    isSameDay,
+    isToday
+} from "date-fns"
 
 // Assign colors to medicines dynamically or via hash
 const MED_COLORS = [
@@ -38,14 +49,17 @@ export default function HistoryPage() {
     const [selectedMedicine, setSelectedMedicine] = useState<string>("all")
     const [loading, setLoading] = useState(true)
     const [view, setView] = useState<'list' | 'calendar'>('list')
-    const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date())
+
+    // Custom Calendar State
+    const [currentMonth, setCurrentMonth] = useState(new Date())
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
     const supabase = createClient()
 
     // Load initial data
     useEffect(() => {
         const load = async () => {
-            // 1. Medicines for filter
+            // 1. Medicines
             const { data: medData } = await supabase
                 .from('medicines')
                 .select('id, name')
@@ -53,7 +67,9 @@ export default function HistoryPage() {
                 .order('name')
             setMedicines(medData || [])
 
-            // 2. All logs (limit 500 for calendar population)
+            // 2. Logs 
+            // Note: For a full calendar we might need more data or pagination logic. 
+            // Currently limiting to 1000 to cover a good range.
             const { data: logData } = await supabase
                 .from('dose_logs')
                 .select(`
@@ -66,7 +82,7 @@ export default function HistoryPage() {
                 `)
                 .eq('dog_id', dogId)
                 .order('taken_at', { ascending: false })
-                .limit(500)
+                .limit(1000)
 
             setAllLogs(logData || [])
             setLoading(false)
@@ -74,34 +90,27 @@ export default function HistoryPage() {
         load()
     }, [dogId, supabase])
 
-    // Handle URL param for initial filter
+    // Handling URL params
     useEffect(() => {
         const medId = searchParams.get("medicineId")
-        if (medId) {
-            setSelectedMedicine(medId)
-        }
+        if (medId) setSelectedMedicine(medId)
     }, [searchParams])
 
-    // Derived state: Filtered Logs for List/Stats
+    // Filter Logs
     const filteredLogs = useMemo(() => {
         return selectedMedicine === "all"
             ? allLogs
             : allLogs.filter(l => l.medicine?.id === selectedMedicine)
     }, [selectedMedicine, allLogs])
 
-    // Stats Calculation
+    // --- Stats Logic ---
     const summaryStats = useMemo(() => {
         if (selectedMedicine === 'all' || filteredLogs.length === 0) return null
-
-        // Count only taken
         const takenLogs = filteredLogs.filter(l => l.status === 'taken')
         if (takenLogs.length === 0) return null
-
-        // Sort asc for date calc
         const sorted = [...takenLogs].sort((a, b) => new Date(a.taken_at).getTime() - new Date(b.taken_at).getTime())
         const firstDate = new Date(sorted[0].taken_at)
         const daysDiff = differenceInCalendarDays(new Date(), firstDate) || 1
-
         const count = takenLogs.length
         const perDay = count / daysDiff
 
@@ -116,7 +125,7 @@ export default function HistoryPage() {
         }
     }, [filteredLogs, selectedMedicine])
 
-    // Group by Date for List View
+    // --- List View Grouping ---
     const groupedLogs = useMemo(() => {
         const groups: Record<string, typeof allLogs> = {}
         filteredLogs.forEach(log => {
@@ -124,42 +133,31 @@ export default function HistoryPage() {
             const today = new Date()
             const yesterday = new Date()
             yesterday.setDate(yesterday.getDate() - 1)
-
             let key = date.toLocaleDateString('nb-NO')
             if (date.toDateString() === today.toDateString()) key = "I dag"
             else if (date.toDateString() === yesterday.toDateString()) key = "I går"
-
             if (!groups[key]) groups[key] = []
             groups[key].push(log)
         })
         return groups
     }, [filteredLogs])
-
-    // Sort keys for List View
     const sortedGroups = Object.keys(groupedLogs).sort((a, b) => {
-        if (a === "I dag") return -1
-        if (b === "I dag") return 1
-        if (a === "I går") return -1
-        if (b === "I går") return 1
-        const [d1, m1, y1] = a.split('.').map(Number)
-        const [d2, m2, y2] = b.split('.').map(Number)
-        // Parse manually or fallback logic
-        if (!y1) return 0 // safety
+        if (a === "I dag") return -1; if (b === "I dag") return 1
+        if (a === "I går") return -1; if (b === "I går") return 1
+        const [d1, m1, y1] = a.split('.').map(Number); const [d2, m2, y2] = b.split('.').map(Number)
+        if (!y1) return 0
         return new Date(y2, m2 - 1, d2).getTime() - new Date(y1, m1 - 1, d1).getTime()
     })
 
-    // Calendar Helpers
+    // --- Calendar Helper Logic ---
     const getMedColor = (medId: string) => {
         const index = medicines.findIndex(m => m.id === medId)
         if (index === -1) return "bg-gray-400"
         return MED_COLORS[index % MED_COLORS.length]
     }
 
-    // Filter logs for Calendar: Always show ALL logs in calendar, but dim non-selected?
-    // Actually, usually calendar shows everything, but if filter is active, maybe only show those dots.
-    // Let's use `filteredLogs` for the calendar dots as well to match user expectation.
-    const calendarDays = useMemo(() => {
-        const days: Record<string, any[]> = {} // YYYY-MM-DD -> logs
+    const calendarDaysMap = useMemo(() => {
+        const days: Record<string, any[]> = {}
         filteredLogs.forEach(log => {
             const dayKey = format(new Date(log.taken_at), 'yyyy-MM-dd')
             if (!days[dayKey]) days[dayKey] = []
@@ -168,9 +166,20 @@ export default function HistoryPage() {
         return days
     }, [filteredLogs])
 
+    // Generate Grid Days
+    const calendarGrid = useMemo(() => {
+        const monthStart = startOfMonth(currentMonth)
+        const monthEnd = endOfMonth(monthStart)
+        const startDate = startOfWeek(monthStart, { locale: nb })
+        const endDate = endOfWeek(monthEnd, { locale: nb })
+        return eachDayOfInterval({ start: startDate, end: endDate })
+    }, [currentMonth])
+
+    const weekDays = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"]
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" asChild>
                         <Link href={`/dog/${dogId}`}><ArrowLeft className="h-5 w-5" /></Link>
@@ -190,7 +199,7 @@ export default function HistoryPage() {
                         ))}
                     </select>
 
-                    <div className="flex border rounded-md overflow-hidden">
+                    <div className="flex border rounded-md overflow-hidden bg-background">
                         <Button
                             variant={view === 'list' ? 'secondary' : 'ghost'}
                             size="icon"
@@ -211,134 +220,161 @@ export default function HistoryPage() {
                 </div>
             </div>
 
-            {/* SMART SUMMARY HEADER */}
-            {summaryStats && (
-                <div className="bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-green-900 dark:text-green-100 animate-in fade-in slide-in-from-top-2">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-green-200 dark:bg-green-700 flex items-center justify-center shrink-0">
-                            <CalendarIcon className="h-5 w-5 text-green-700 dark:text-white" />
+            {/* Content Area */}
+            {view === 'list' ? (
+                <div className="flex-1 overflow-auto">
+                    {/* Headers for List View */}
+                    {summaryStats && (
+                        <div className="bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-green-900 dark:text-green-100 mb-6 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-green-200 dark:bg-green-700 flex items-center justify-center shrink-0">
+                                    <CalendarIcon className="h-5 w-5 text-green-700 dark:text-white" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-lg">{medicines.find(m => m.id === selectedMedicine)?.name}</p>
+                                    <p className="opacity-90">{summaryStats.text}</p>
+                                </div>
+                            </div>
+                            <div className="hidden sm:block text-2xl font-bold opacity-50 px-4">
+                                {summaryStats.count} doser
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-semibold text-lg">{medicines.find(m => m.id === selectedMedicine)?.name}</p>
-                            <p className="opacity-90">{summaryStats.text}</p>
-                        </div>
-                    </div>
-                    <div className="hidden sm:block text-2xl font-bold opacity-50 px-4">
-                        {summaryStats.count} doser
-                    </div>
-                </div>
-            )}
+                    )}
 
-            {loading ? (
-                <div className="text-center py-10 text-muted-foreground">Laster historikk...</div>
-            ) : view === 'list' ? (
-                <div className="space-y-8">
-                    {filteredLogs.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-10">Ingen historikk funnet for dette valget.</p>
-                    ) : (
-                        sortedGroups.map(groupKey => (
-                            <section key={groupKey} className="space-y-3">
-                                <h3 className="font-semibold text-lg text-muted-foreground border-b pb-2 mb-2 sticky top-0 bg-background z-10">
-                                    {groupKey}
-                                </h3>
-                                {groupedLogs[groupKey].map(log => (
-                                    <div key={log.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="font-bold text-lg">
-                                                    {new Date(log.taken_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                                <span className="font-medium truncate">{log.medicine?.name || "Ukjent medisin"}</span>
+                    {loading ? <div className="text-center py-10">Laster...</div> : (
+                        <div className="space-y-8 pb-10">
+                            {filteredLogs.length === 0 ? (
+                                <p className="text-muted-foreground text-center py-10">Ingen loggføringer funnet.</p>
+                            ) : (
+                                sortedGroups.map(groupKey => (
+                                    <section key={groupKey} className="space-y-3">
+                                        <h3 className="font-semibold text-lg text-muted-foreground border-b pb-2 mb-2 sticky top-0 bg-background z-10">
+                                            {groupKey}
+                                        </h3>
+                                        {groupedLogs[groupKey].map(log => (
+                                            <div key={log.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="font-bold text-lg">
+                                                            {new Date(log.taken_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        <span className="font-medium truncate">{log.medicine?.name || "Ukjent medisin"}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                        <span>{log.taker?.full_name?.split(' ')[0]}</span>
+                                                        {log.notes && <span className="italic truncate">- &quot;{log.notes}&quot;</span>}
+                                                    </div>
+                                                </div>
+                                                <div className={cn("w-3 h-3 rounded-full flex-shrink-0", getMedColor(log.medicine?.id))} />
                                             </div>
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <span>av {log.taker?.full_name?.split(' ')[0] || "Ukjent"}</span>
-                                                {log.notes && (
-                                                    <span className="italic truncate max-w-[150px]">- &quot;{log.notes}&quot;</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="ml-4 flex-shrink-0 flex items-center gap-2">
-                                            <div className={cn("w-3 h-3 rounded-full", getMedColor(log.medicine?.id))} />
-                                            <span className={cn(
-                                                "text-xs font-medium px-2 py-1 rounded",
-                                                log.status === 'taken' ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700"
-                                            )}>
-                                                {log.status === 'taken' ? 'Gitt' : log.status}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </section>
-                        ))
+                                        ))}
+                                    </section>
+                                ))
+                            )}
+                        </div>
                     )}
                 </div>
             ) : (
-                <div className="flex justify-center border rounded-xl p-4 bg-card shadow-sm">
-                    <DayPicker
-                        mode="single"
-                        locale={nb}
-                        selected={calendarDate}
-                        onSelect={setCalendarDate}
-                        components={{
-                            // @ts-expect-error - DayContent is valid at runtime in v9 despite strict types in some versions
-                            DayContent: (props: any) => {
-                                const dayKey = format(props.date, 'yyyy-MM-dd')
-                                const logs = calendarDays[dayKey]
-                                return (
-                                    <div className="relative w-full h-full flex items-center justify-center">
-                                        <span>{props.date.getDate()}</span>
-                                        {logs && logs.length > 0 && (
-                                            <div className="absolute bottom-1 flex gap-0.5">
-                                                {logs.slice(0, 3).map((l: any, i: number) => (
-                                                    <div
-                                                        key={i}
-                                                        className={cn("w-1.5 h-1.5 rounded-full", getMedColor(l.medicine?.id))}
-                                                    />
-                                                ))}
-                                                {logs.length > 3 && <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />}
+                /* CALENDAR GRID VIEW */
+                <div className="flex flex-col flex-1 bg-card border rounded-xl overflow-hidden shadow-sm min-h-0">
+                    {/* Calendar Controls */}
+                    <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+                        <div className="font-bold text-lg capitalize pl-2">
+                            {format(currentMonth, 'MMMM yyyy', { locale: nb })}
+                        </div>
+                        <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                                <ChevronLeft className="h-5 w-5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                                <ChevronRight className="h-5 w-5" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Weekday Headers */}
+                    <div className="grid grid-cols-7 border-b bg-muted/10 divide-x text-center shrink-0">
+                        {weekDays.map(day => (
+                            <div key={day} className="py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Calendar Cells */}
+                    <div className="grid grid-cols-7 auto-rows-fr bg-muted/20 gap-px border-b flex-1 overflow-y-auto min-h-0">
+                        {calendarGrid.map((date, idx) => {
+                            const isCurrentMonth = isSameMonth(date, currentMonth)
+                            const dateKey = format(date, 'yyyy-MM-dd')
+                            const logs = calendarDaysMap[dateKey] || []
+                            const isSelected = selectedDate && isSameDay(date, selectedDate)
+
+                            return (
+                                <div
+                                    key={dateKey}
+                                    onClick={() => setSelectedDate(date)}
+                                    className={cn(
+                                        "bg-background p-1 flex flex-col relative transition-colors cursor-pointer hover:bg-muted/50 overflow-hidden",
+                                        !isCurrentMonth && "bg-muted/5 text-muted-foreground/50",
+                                        isSelected && "ring-2 ring-primary inset-0 z-10"
+                                    )}
+                                >
+                                    <div className={cn("text-xs font-semibold p-1 mb-1 ml-auto w-6 h-6 flex items-center justify-center rounded-full shrink-0",
+                                        isToday(date) && "bg-primary text-primary-foreground"
+                                    )}>
+                                        {format(date, 'd')}
+                                    </div>
+
+                                    {/* Events List */}
+                                    <div className="flex-1 flex flex-col gap-1 overflow-y-auto w-full">
+                                        {logs.map(log => (
+                                            <div
+                                                key={log.id}
+                                                className="flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] sm:text-xs bg-muted/30 border border-transparent hover:border-border transition-colors w-full"
+                                                title={`${log.medicine?.name} - ${format(new Date(log.taken_at), 'HH:mm')}`}
+                                            >
+                                                <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", getMedColor(log.medicine?.id))} />
+                                                <span className="truncate font-medium flex-1 text-left">
+                                                    {log.medicine?.name}
+                                                </span>
                                             </div>
-                                        )}
+                                        ))}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    {/* Selected Date Details (Footer) */}
+                    {selectedDate && (
+                        <div className="p-3 bg-muted/10 border-t shrink-0">
+                            <h3 className="font-semibold mb-2 text-sm flex items-center justify-between">
+                                <span>Detaljer {format(selectedDate, 'd. MMMM', { locale: nb })}</span>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setSelectedDate(null)}>✕</Button>
+                            </h3>
+                            {(() => {
+                                const dayKey = format(selectedDate, 'yyyy-MM-dd')
+                                const logs = calendarDaysMap[dayKey]
+                                if (!logs || logs.length === 0) return <p className="text-xs text-muted-foreground">Ingen hendelser.</p>
+                                return (
+                                    <div className="flex flex-col gap-2 max-h-[150px] overflow-auto">
+                                        {logs.map(log => (
+                                            <div key={log.id} className="flex items-center gap-2 px-3 py-2 bg-background border rounded-md shadow-sm text-sm">
+                                                <div className={cn("w-2 h-2 rounded-full", getMedColor(log.medicine?.id))} />
+                                                <span className="font-medium flex-1">{log.medicine?.name}</span>
+                                                <span className="text-muted-foreground text-xs">{format(new Date(log.taken_at), 'HH:mm')}</span>
+                                                {log.taker?.full_name && (
+                                                    <span className="text-muted-foreground text-xs border-l pl-2 ml-2">
+                                                        {log.taker.full_name.split(' ')[0]}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 )
-                            }
-                        }}
-                        modifiersClassNames={{
-                            selected: "bg-primary text-primary-foreground font-bold rounded-md"
-                        }}
-                        className="p-3"
-                    />
-
-                    {/* Selected Day Details Panel could go here */}
-                </div>
-            )}
-
-            {/* Calendar Legend / Info when in calendar view could be added here */}
-            {view === 'calendar' && calendarDate && (
-                <div className="border rounded-xl p-4 bg-card/50">
-                    <h3 className="font-semibold mb-3">
-                        Hendelser {calendarDate.toLocaleDateString('nb-NO')}
-                    </h3>
-                    {(() => {
-                        const dayKey = format(calendarDate, 'yyyy-MM-dd')
-                        const logs = calendarDays[dayKey]
-                        if (!logs || logs.length === 0) return <p className="text-muted-foreground">Ingen registreringer denne dagen.</p>
-                        return (
-                            <div className="space-y-2">
-                                {logs.map(log => (
-                                    <div key={log.id} className="flex items-center gap-3 p-2 rounded-md border bg-background">
-                                        <div className={cn("w-3 h-3 rounded-full shrink-0", getMedColor(log.medicine?.id))} />
-                                        <div className="flex-1">
-                                            <div className="flex justify-between">
-                                                <span className="font-medium">{log.medicine?.name}</span>
-                                                <span className="text-sm text-muted-foreground">{new Date(log.taken_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}</span>
-                                            </div>
-                                            {log.notes && <p className="text-xs text-muted-foreground italic">{log.notes}</p>}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )
-                    })()}
+                            })()}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
