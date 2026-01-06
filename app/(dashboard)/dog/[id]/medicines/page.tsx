@@ -85,27 +85,21 @@ export default function MedicinesPage() {
     }
 
     const handlePauseConfirm = async () => {
-        // DEBUG: Alert using visible popups
-        alert("Starter pause-prosess... ID: " + pausingId)
-
         if (!pausingId) return
         setActionLoading(true)
         try {
             const dateObj = new Date(pauseDate)
             const isoString = dateObj.toISOString()
-            alert("Sender dato: " + isoString)
 
             const result = await pauseMedicine(pausingId, isoString)
-            alert("Resultat fra server: " + JSON.stringify(result))
 
-            if (!result.success) alert("Feil: " + result.error)
+            if (!result.success) alert("Kunne ikke sette på pause: " + result.error)
             else {
-                alert("Suksess! Oppdaterer liste...")
                 await fetchMeds()
             }
         } catch (e: any) { // Explicitly cast error
-            alert("Kritisk feil i frontend: " + (e.message || e))
             console.error(e)
+            alert("Feil ved pause: " + (e.message || e))
         } finally {
             setActionLoading(false)
             setPausingId(null)

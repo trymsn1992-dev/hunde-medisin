@@ -205,14 +205,11 @@ export async function pauseMedicine(medicineId: string, pauseDate: string) {
             throw updateError
         }
 
-        console.log("Updated rows:", updatedData?.length)
-
         if (!updatedData || updatedData.length === 0) {
             console.error("Zero rows updated! RLS likely blocking.")
             return { success: false, error: "Database update failed (RLS blocked?)" }
         }
 
-        console.log("Pause successful for plan:", plan.id)
         revalidatePath('/', 'layout')
         return { success: true }
     } catch (error: unknown) {
