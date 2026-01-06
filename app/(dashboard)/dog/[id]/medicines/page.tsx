@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { Plus, ArrowLeft, Trash2, Pause, Play } from "lucide-react"
 export default function MedicinesPage() {
     const params = useParams()
     const dogId = params.id as string
+    const router = useRouter()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [medicines, setMedicines] = useState<any[]>([])
     const supabase = createClient()
@@ -42,6 +43,7 @@ export default function MedicinesPage() {
         }) || []
 
         setMedicines(mapped)
+        router.refresh()
     }
 
     useEffect(() => {
