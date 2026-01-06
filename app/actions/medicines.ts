@@ -126,47 +126,151 @@ export async function createMedicine(data: {
     }
 }
 
-export async function deleteMedicine(id: string) {
-    const supabase = await createClient()
+revalidatePath('/', 'layout')
+return { success: true }
+    } catch (error: unknown) {
+    console.error("Delete Action Error:", error)
+    const message = error instanceof Error ? error.message : "Failed to delete medicine"
+    return { success: false, error: message }
+}
+}
 
-    // Verify auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-        throw new Error("Unauthorized")
-    }
+export async function pauseMedicine(medicineId: string, pauseDate: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
 
     try {
-        // 1. Delete associated logs explicitly (since schema is ON DELETE SET NULL)
-        const { error: logsError } = await supabase
-            .from('dose_logs')
-            .delete()
-            .eq('medicine_id', id)
+        // Find the active plan for this medicine
+        // We assume 1 active plan per medicine for V1
+        const { data: plan, error: findError } = await supabase
+            .from('medication_plans')
+            .select('*')
+            .eq('medicine_id', medicineId)
+            .eq('active', true)
+            .single()
 
-        if (logsError) {
-            console.error("Error deleting logs:", logsError)
-            // We continue to try deleting the medicine even if logs fail? 
-            // Ideally we should probably throw/return error, but maybe user just wants it gone.
-            // Let's be safe and stop if logs fail to ensure consistency? 
-            // actually if logs fail, we shouldn't delete the medicine ideally.
-            throw logsError
+        if (findError || !plan) {
+            // Already paused or no plan?
+            // If no active plan, check if there is a plan that is effectively "active" but we need to pause it?
+            // "Active" flag is the primary indicator.
+            return { success: false, error: "No active plan found to pause" }
         }
 
-        // 2. Delete the medicine (cascades to plans)
-        const { error } = await supabase
-            .from('medicines')
-            .delete()
-            .eq('id', id)
+        const { error: updateError } = await supabase
+            .from('medication_plans')
+            .update({
+                active: false,
+                paused_at: pauseDate
+            })
+            .eq('id', plan.id)
 
-        if (error) {
-            console.error("Supabase Delete Error:", error)
-            return { success: false, error: error.message || error.details || "Database error" }
+        if (updateError) throw updateError
+
+        revalidatePath('/', 'layout')
+        return { success: true }
+    } catch (error: unknown) {
+        console.error("Pause Error:", error)
+        return { success: false, error: "Failed to pause medicine" }
+    }
+}
+
+export async function resumeMedicine(medicineId: string, mode: 'remaining' | 'new') {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    try {
+        // Find the paused plan (active=false, paused_at not null)
+        // We'll sort by created_at desc to get the latest one just in case
+        const { data: plan, error: findError } = await supabase
+            .from('medication_plans')
+            .select('*')
+            .eq('medicine_id', medicineId)
+            .eq('active', false)
+            .not('paused_at', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+
+        if (findError || !plan) {
+            return { success: false, error: "No paused plan found to resume" }
+        }
+
+        if (mode === 'new') {
+            // "New Plan" - User might likely be redirected to edit page on client side.
+            // But if they just want to "Unpause" and clear the schedule/reset dates efficiently?
+            // Actually, based on requirements, "New Plan" implies changing params.
+            // For this action, if called with 'new', we might just reactivate it starting NOW, keeping same frequency?
+            // Or maybe 'new' implies "Start fresh track from today, ignore past duration".
+
+            // Let's implement: Active=True, Start=Now, End=Null (Continuous) OR user edits it.
+            // Requirement: "begynne med en annen plan" -> This sounds like "Edit".
+            // So this action might not even be called for 'new', instead client redirects to /edit.
+            // However, providing a basic "Restart" logic here:
+
+            const now = new Date()
+            const { error: updateError } = await supabase
+                .from('medication_plans')
+                .update({
+                    active: true,
+                    paused_at: null,
+                    start_date: now.toISOString(),
+                    // If we resume as "new", do we keep the old end date? Probably invalid.
+                    // Let's clear end date to make it continuous unless user edits it.
+                    end_date: null
+                })
+                .eq('id', plan.id)
+
+            if (updateError) throw updateError
+
+        } else if (mode === 'remaining') {
+            // Calculate remaining duration
+            if (!plan.end_date || !plan.paused_at) {
+                // Should not happen for 'remaining' logic if no end date existed.
+                // If it was infinite, we just resume infinite.
+                const now = new Date()
+                const { error: updateError } = await supabase
+                    .from('medication_plans')
+                    .update({
+                        active: true,
+                        paused_at: null,
+                        start_date: now.toISOString()
+                    })
+                    .eq('id', plan.id)
+                if (updateError) throw updateError
+            } else {
+                const endDate = new Date(plan.end_date)
+                const pausedAt = new Date(plan.paused_at)
+
+                // Diff in milliseconds
+                const remainingMs = endDate.getTime() - pausedAt.getTime()
+
+                // If negative (expired while paused?), treat as 0 or just extend? 
+                // Usually logic implies shifting the remaining block.
+                const safeRemaining = Math.max(0, remainingMs)
+
+                const newStart = new Date()
+                const newEnd = new Date(newStart.getTime() + safeRemaining)
+
+                const { error: updateError } = await supabase
+                    .from('medication_plans')
+                    .update({
+                        active: true,
+                        paused_at: null,
+                        start_date: newStart.toISOString(),
+                        end_date: newEnd.toISOString()
+                    })
+                    .eq('id', plan.id)
+
+                if (updateError) throw updateError
+            }
         }
 
         revalidatePath('/', 'layout')
         return { success: true }
     } catch (error: unknown) {
-        console.error("Delete Action Error:", error)
-        const message = error instanceof Error ? error.message : "Failed to delete medicine"
-        return { success: false, error: message }
+        console.error("Resume Error:", error)
+        return { success: false, error: "Failed to resume medicine" }
     }
 }
