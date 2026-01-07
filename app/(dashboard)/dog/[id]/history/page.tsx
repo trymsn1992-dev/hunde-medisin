@@ -232,7 +232,7 @@ export default function HistoryPage() {
     const weekDays = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"]
 
     return (
-        <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
+        <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col max-w-5xl mx-auto">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" asChild>

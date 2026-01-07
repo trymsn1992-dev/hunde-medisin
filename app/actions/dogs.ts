@@ -58,6 +58,57 @@ export async function createDog(prevState: any, formData: FormData) {
     redirect("/dashboard")
 }
 
+export async function updateDogProfile(dogId: string, prevState: any, formData: FormData) {
+    const supabase = await createClient()
+
+    // Extract data
+    const name = formData.get("name") as string
+    const breed = formData.get("breed") as string
+    const weight = formData.get("weight") as string
+    const imageUrl = formData.get("image_url") as string
+
+    if (!name) {
+        return { message: "Navn er påkrevd" }
+    }
+
+    try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            return { message: "Ikke logget inn" }
+        }
+
+        const { data, error } = await supabase
+            .from("dogs")
+            .update({
+                name,
+                breed: breed || null,
+                weight: weight || null,
+                image_url: imageUrl || null
+            })
+            .eq("id", dogId)
+            .select()
+
+        if (error) {
+            console.error("Update dog error:", error)
+            return { message: "Kunne ikke oppdatere profil: " + error.message, success: false }
+        }
+
+        if (!data || data.length === 0) {
+            // Should be covered by RLS or generic error catch
+            return { message: "Du har ikke tilgang til å endre denne hunden eller hunden finnes ikke.", success: false }
+        }
+
+    } catch (e: any) {
+        console.error("Unexpected error:", e)
+        return { message: "Uventet feil: " + e.message, success: false }
+    }
+
+    revalidatePath(`/dog/${dogId}`)
+    revalidatePath(`/dog/${dogId}/profile`)
+    // We don't redirect, just stay on profile page with success
+    return { success: true, message: "Profil oppdatert!" }
+}
+
 export async function deleteDog(dogId: string) {
     const supabase = await createClient()
 
@@ -69,10 +120,6 @@ export async function deleteDog(dogId: string) {
             .from("dogs")
             .delete()
             .eq("id", dogId)
-        // Extra safety: only delete if created by user OR user is admin member
-        // RLS should handle this, but explicit check doesn't hurt.
-        // Actually, RLS for DELETE on 'dogs' is not standard yet in our schema.
-        // Let's rely on RLS policies we just checked/fixed.
 
         if (error) {
             console.error("Delete dog error:", error)

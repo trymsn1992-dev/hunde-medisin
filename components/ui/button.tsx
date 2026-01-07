@@ -44,8 +44,9 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ className, variant, size, ...props }, ref) => {
+    ({ className, variant, size, asChild = false, ...props }, ref) => {
         // Simplified: No Slot support to save an install, standard button only
+        // Destructuring asChild here prevents it from being passed to the DOM element
         return (
             <button
                 className={cn(buttonVariants({ variant, size, className }))}

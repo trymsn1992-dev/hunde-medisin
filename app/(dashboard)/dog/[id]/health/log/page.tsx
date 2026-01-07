@@ -99,7 +99,7 @@ export default function LogHealthPage() {
     }
 
     return (
-        <div className="max-w-lg mx-auto pb-20 space-y-6">
+        <div className="max-w-5xl mx-auto pb-20 space-y-6">
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href={`/dog/${dogId}`}>
@@ -232,7 +232,7 @@ export default function LogHealthPage() {
             <div className="h-20" /> {/* Spacer */}
 
             {/* Fixed Bottom Save Button */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t z-10 max-w-lg mx-auto">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t z-10 max-w-5xl mx-auto">
                 <Button className="w-full h-12 text-lg shadow-lg" onClick={handleSubmit} disabled={loading}>
                     <Save className="mr-2 h-5 w-5" />
                     {loading ? "Lagrer..." : "Lagre Logg"}

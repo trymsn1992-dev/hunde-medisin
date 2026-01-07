@@ -204,62 +204,26 @@ export default function DogDashboardPage() {
     }
 
     return (
-        <div className="pb-24 sm:pb-8 space-y-8 max-w-2xl mx-auto">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">{dogName}</h1>
-                    <p className="text-muted-foreground">Medisinsporing</p>
-                </div>
-                {/* Desktop/Tablet Navigation */}
-                <div className="hidden md:flex gap-2">
-                    <Button asChild variant="outline" size="sm">
-                        <Link href={`/dog/${dogId}/history`}>Historikk</Link>
-                    </Button>
-                    <Button asChild size="sm">
-                        <Link href={`/dog/${dogId}/medicines`}>
-                            <Pill className="mr-2 h-4 w-4" /> Medisiner
-                        </Link>
-                    </Button>
-                    <Button asChild variant="secondary" size="sm" className="bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/30 dark:text-pink-300">
-                        <Link href={`/dog/${dogId}/health/log`}>
-                            <Heart className="mr-2 h-4 w-4" /> Logg Helse
-                        </Link>
-                    </Button>
-                </div>
-            </div>
-
+        <div className="pb-24 sm:pb-8 space-y-8 max-w-5xl mx-auto">
+            {/* Active / Due Now Section */}
             <section className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xl font-semibold">
-                        <Clock className="h-5 w-5 text-primary" /> Dagens plan
+                    <div className="flex items-center gap-2 text-xl font-semibold bg-primary/10 px-4 py-1.5 rounded-full text-primary w-fit">
+                        <Clock className="h-5 w-5" /> Gi nå
                     </div>
-                    {!loading && todayDoses.length > 0 && !todayDoses.some(d => d.status === 'overdue') && (
-                        <div className={cn(
-                            "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold animate-in fade-in slide-in-from-right-2 duration-500",
-                            todayDoses.every(d => d.status === 'taken')
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
-                                : "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50"
-                        )}>
-                            {todayDoses.every(d => d.status === 'taken') ? (
-                                <><PartyPopper className="h-3.5 w-3.5" /> Full pot! Alt er gitt i dag.</>
-                            ) : (
-                                <><Sparkles className="h-3.5 w-3.5" /> Alt er i rute!</>
-                            )}
-                        </div>
-                    )}
                 </div>
 
                 {loading ? (
                     <div className="text-muted-foreground">Laster plan...</div>
-                ) : todayDoses.length === 0 ? (
-                    <Card className="bg-muted/30 border-dashed">
-                        <CardContent className="pt-6 text-center text-muted-foreground">
-                            Ingenting på planen i dag.
-                        </CardContent>
-                    </Card>
+                ) : todayDoses.filter(d => d.status !== 'taken').length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 rounded-lg border border-dashed">
+                        {/* Only show PartyPopper if we actually had doses and finished them */}
+                        {todayDoses.length > 0 && <PartyPopper className="h-8 w-8 text-emerald-500/50 mb-2" />}
+                        <p className="text-muted-foreground font-medium">Ingenting å gi akkurat nå :)</p>
+                    </div>
                 ) : (
                     <div className="grid gap-3">
-                        {todayDoses.map((dose, i) => {
+                        {todayDoses.filter(d => d.status !== 'taken').map((dose, i) => {
                             const doseKey = `${dose.planId}-${dose.scheduledTime}`
                             const isProcessing = processingDoseKey === doseKey
 
@@ -268,23 +232,20 @@ export default function DogDashboardPage() {
                                     "transition-all border-l-4",
                                     dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
                                     dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
-                                    dose.status === 'taken' && "border-l-muted-foreground/30 opacity-70 bg-muted/30"
                                 )}>
                                     <div className="flex items-center p-4">
                                         <div className={cn(
-                                            "w-16 text-center font-bold text-lg",
+                                            "w-20 text-center font-bold text-lg",
                                             dose.status === 'overdue' ? "text-red-500" : "text-foreground",
-                                            dose.status === 'taken' && "text-muted-foreground decoration-line-through"
                                         )}>
-                                            {dose.scheduledTime}
+                                            {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
                                         </div>
 
                                         <div className="flex-1 px-4">
-                                            {/* Using new MedicineBadge instead of plain text */}
                                             <div className="mb-1">
                                                 <MedicineBadge
                                                     medicine={{ id: dose.medicineId, name: dose.medicineName }}
-                                                    className={cn("text-base font-semibold", dose.status === 'taken' && "opacity-80")}
+                                                    className="text-base font-semibold"
                                                 />
                                             </div>
                                             <p className="text-sm text-muted-foreground">{dose.doseText}</p>
@@ -296,20 +257,12 @@ export default function DogDashboardPage() {
                                                 disabled={isProcessing}
                                                 className={cn(
                                                     "min-w-[110px] font-semibold transition-all shadow-sm",
-                                                    // Taken State
-                                                    dose.status === 'taken' && "bg-emerald-100/10 text-emerald-500 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30",
-                                                    // Due State
                                                     dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
-                                                    // Overdue State
                                                     dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white"
                                                 )}
                                             >
                                                 {isProcessing ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : dose.status === 'taken' ? (
-                                                    <>
-                                                        <CheckCircle className="mr-2 h-4 w-4" /> Gitt
-                                                    </>
                                                 ) : (
                                                     "Gi dose"
                                                 )}
@@ -323,6 +276,57 @@ export default function DogDashboardPage() {
                 )}
             </section>
 
+            {/* Completed / Given Today Section */}
+            {todayDoses.some(d => d.status === 'taken') && (
+                <section className="space-y-4 pt-4 opacity-75">
+                    <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground px-2">
+                        <CheckCircle className="h-5 w-5" /> Gitt i dag
+                    </div>
+                    <div className="grid gap-3">
+                        {todayDoses.filter(d => d.status === 'taken').map((dose, i) => {
+                            const doseKey = `${dose.planId}-${dose.scheduledTime}`
+                            const isProcessing = processingDoseKey === doseKey
+
+                            return (
+                                <Card key={i} className="transition-all border-l-4 border-l-muted-foreground/30 bg-muted/30">
+                                    <div className="flex items-center p-4">
+                                        <div className="w-20 text-center font-bold text-lg text-muted-foreground decoration-line-through">
+                                            {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
+                                        </div>
+
+                                        <div className="flex-1 px-4">
+                                            <div className="mb-1">
+                                                <MedicineBadge
+                                                    medicine={{ id: dose.medicineId, name: dose.medicineName }}
+                                                    className="text-base font-semibold opacity-80"
+                                                />
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">{dose.doseText}</p>
+                                        </div>
+
+                                        <div>
+                                            <Button
+                                                onClick={() => toggleDose(dose)}
+                                                disabled={isProcessing}
+                                                className="min-w-[110px] font-semibold transition-all shadow-sm bg-emerald-100/10 text-emerald-500 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
+                                            >
+                                                {isProcessing ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <CheckCircle className="mr-2 h-4 w-4" /> Gitt
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </Card>
+                            )
+                        })}
+                    </div>
+                </section>
+            )}
+
             <section className="space-y-4 opacity-60">
                 <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground">
                     <CalendarDays className="h-5 w-5" /> I morgen
@@ -334,8 +338,8 @@ export default function DogDashboardPage() {
                         {tomorrowDoses.map((dose, i) => (
                             <Card key={i} className="bg-muted/10 border-dashed">
                                 <div className="flex items-center p-4">
-                                    <div className="w-16 text-center font-bold text-lg text-muted-foreground">
-                                        {dose.scheduledTime}
+                                    <div className="w-20 text-center font-bold text-lg text-muted-foreground">
+                                        {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
                                     </div>
                                     <div className="flex-1 px-4">
                                         <div className="mb-1">
@@ -364,7 +368,7 @@ export default function DogDashboardPage() {
                             <Pill className="mr-2 h-4 w-4" /> Medisiner
                         </Link>
                     </Button>
-                    <Button asChild variant="secondary" className="flex-1 shadow-sm h-12 bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/30 dark:text-pink-300">
+                    <Button asChild variant="secondary" className="flex-1 shadow-sm h-12 bg-pink-100 text-pink-900 hover:bg-pink-200 border border-pink-200">
                         <Link href={`/dog/${dogId}/health/log`}>
                             <Heart className="mr-2 h-4 w-4" /> Helse
                         </Link>
