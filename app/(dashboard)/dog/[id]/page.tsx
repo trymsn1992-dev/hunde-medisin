@@ -1,14 +1,13 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Clock, CheckCircle, Pill, CalendarDays, Loader2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, CheckCircle, Pill, CalendarDays, Loader2, Sparkles, PartyPopper, Trash2, UserPlus, Copy, Heart, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Trash2, UserPlus, Copy, Heart, Sparkles, PartyPopper } from "lucide-react"
 import { deleteDog } from "@/app/actions/dogs"
 import { MedicineBadge } from "@/components/medicine-badge"
 
@@ -22,17 +21,36 @@ type DoseEvent = {
     scheduledTime: string // HH:MM
     status: 'due' | 'upcoming' | 'overdue' | 'taken'
     isToday: boolean
+    takenAt?: string
+    takenBy?: {
+        name: string
+        avatarUrl: string
+    }
 }
 
 export default function DogDashboardPage() {
     const params = useParams()
+    const searchParams = useSearchParams()
     const dogId = params.id as string
+
+    // Date State Management
+    const dateParam = searchParams.get("date")
+    const [currentDate, setCurrentDate] = useState(new Date())
+
+    // Update currentDate when URL param changes
+    useEffect(() => {
+        if (dateParam) {
+            setCurrentDate(new Date(dateParam))
+        } else {
+            setCurrentDate(new Date())
+        }
+    }, [dateParam])
+
     const [loading, setLoading] = useState(true)
     const [dogName, setDogName] = useState("")
     const [inviteCode, setInviteCode] = useState("")
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-    const [todayDoses, setTodayDoses] = useState<DoseEvent[]>([])
-    const [tomorrowDoses, setTomorrowDoses] = useState<DoseEvent[]>([])
+    const [doses, setDoses] = useState<DoseEvent[]>([])
 
     // Key to track which dose is currently processing (planId-time)
     const [processingDoseKey, setProcessingDoseKey] = useState<string | null>(null)
@@ -41,9 +59,6 @@ export default function DogDashboardPage() {
     const router = useRouter()
 
     const fetchData = useCallback(async () => {
-        // Only set global loading on first load to avoid screen flicker
-        // But here we rely on button loading state for updates
-
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
@@ -72,18 +87,36 @@ export default function DogDashboardPage() {
                 .in('medicine_id', medicineIds)
                 .eq('active', true)
 
-            // Fetch Logs (Today)
-            const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+            // Fetch Logs for SELECTED DATE
+            const startOfDay = new Date(currentDate)
+            startOfDay.setHours(0, 0, 0, 0)
+
+            const endOfDay = new Date(currentDate)
+            endOfDay.setHours(23, 59, 59, 999)
+
             const { data: logs } = await supabase
                 .from("dose_logs")
-                .select("id, plan_id, taken_at")
+                .select(`
+                    id, 
+                    plan_id, 
+                    taken_at,
+                    taken_by (
+                        full_name,
+                        avatar_url
+                    )
+                `)
                 .in("medicine_id", medicineIds)
                 .gte("taken_at", startOfDay.toISOString())
+                .lte("taken_at", endOfDay.toISOString())
 
             if (plans) {
-                const buildEvents = (isToday: boolean) => {
+                const buildEvents = () => {
                     const events: DoseEvent[] = []
                     const now = new Date()
+                    const isToday = now.toDateString() === currentDate.toDateString()
+                    const isFutute = currentDate > now && !isToday
+                    const isPast = currentDate < now && !isToday
+
                     const currentTotalMins = now.getHours() * 60 + now.getMinutes()
 
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -96,33 +129,44 @@ export default function DogDashboardPage() {
                         const sortedLogs = planLogs.sort((a: any, b: any) => new Date(a.taken_at).getTime() - new Date(b.taken_at).getTime())
 
                         times.forEach((t, index) => {
-                            events.push(createEvent(p, t, index, sortedLogs, currentTotalMins, isToday))
+                            events.push(createEvent(p, t, index, sortedLogs, currentTotalMins, isToday, isFutute, isPast))
                         })
                     })
                     return events.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime))
                 }
 
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const createEvent = (p: any, t: string, index: number, sortedLogs: any[], currentMins: number, isToday: boolean): DoseEvent => {
+                const createEvent = (p: any, t: string, index: number, sortedLogs: any[], currentMins: number, isToday: boolean, isFuture: boolean, isPast: boolean): DoseEvent => {
                     const [h, m] = t.split(':').map(Number)
                     const scheduledMins = h * 60 + m
 
                     let status: DoseEvent['status'] = 'upcoming'
                     let logId: string | undefined
+                    let takenAt: string | undefined
+                    let takenBy: { name: string, avatarUrl: string } | undefined
 
-                    if (isToday) {
-                        if (index < sortedLogs.length) {
-                            status = 'taken'
-                            logId = sortedLogs[index].id
-                        } else {
-                            if (scheduledMins < currentMins) {
-                                status = 'overdue'
-                            } else {
-                                status = 'due'
+                    // Check if Taken
+                    if (index < sortedLogs.length) {
+                        status = 'taken'
+                        const log = sortedLogs[index]
+                        logId = log.id
+                        takenAt = log.taken_at
+                        if (log.taken_by) {
+                            const profile = log.taken_by
+                            takenBy = {
+                                name: profile.full_name,
+                                avatarUrl: profile.avatar_url
                             }
                         }
-                    } else {
+                    } else if (isPast) {
+                        // Past date and not taken -> Overdue
+                        status = 'overdue'
+                    } else if (isFuture) {
+                        // Future date -> Upcoming
                         status = 'upcoming'
+                    } else if (isToday) {
+                        // Today logic: All active doses for today show as "Due" (Green), never "Overdue" (Red)
+                        status = 'due'
                     }
 
                     return {
@@ -134,16 +178,17 @@ export default function DogDashboardPage() {
                         doseText: p.dose_text,
                         scheduledTime: t,
                         status,
-                        isToday
+                        isToday: isToday, // Keep for UI styling
+                        takenAt,
+                        takenBy
                     }
                 }
 
-                setTodayDoses(buildEvents(true))
-                setTomorrowDoses(buildEvents(false))
+                setDoses(buildEvents())
             }
         }
         setLoading(false)
-    }, [dogId, supabase])
+    }, [dogId, supabase, currentDate])
 
     useEffect(() => {
         fetchData()
@@ -153,6 +198,12 @@ export default function DogDashboardPage() {
     const toggleDose = async (dose: DoseEvent) => {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
+
+        // Restriction: Can only give doses for today
+        if (!dose.isToday && dose.status !== 'taken') {
+            alert("Du kan bare registrere doser for nåværende dato.")
+            return
+        }
 
         const doseKey = `${dose.planId}-${dose.scheduledTime}`
         setProcessingDoseKey(doseKey) // Start loading on this button
@@ -203,118 +254,108 @@ export default function DogDashboardPage() {
         alert("Invitasjonslenke kopiert til utklippstavlen! Send den til andre.")
     }
 
+    const changeDate = (days: number) => {
+        const newDate = new Date(currentDate)
+        newDate.setDate(newDate.getDate() + days)
+        const dateString = newDate.toISOString().split('T')[0]
+        router.push(`?date=${dateString}`)
+    }
+
+    // Helper to format date header
+    const formatDateHeader = (date: Date) => {
+        const now = new Date()
+        const isToday = date.toDateString() === now.toDateString()
+        const isYesterday = new Date(now.setDate(now.getDate() - 1)).toDateString() === date.toDateString()
+        const isTomorrow = new Date(new Date().setDate(new Date().getDate() + 1)).toDateString() === date.toDateString()
+
+        if (isToday) return "I dag"
+        if (isYesterday) return "I går"
+        if (isTomorrow) return "I morgen"
+
+        // Norweigan locale format
+        return date.toLocaleDateString("nb-NO", { weekday: 'long', day: 'numeric', month: 'long' })
+    }
+
     return (
-    return (
-        <div className="pb-24 md:pb-8 space-y-8 max-w-5xl mx-auto">
-            {/* Desktop Grid Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        <div className="space-y-6 max-w-5xl mx-auto">
 
-                {/* LEFT COLUMN: ACTIVE TASKS */}
-                <div className="space-y-8">
-                    {/* Active / Due Now Section */}
-                    <section className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xl font-semibold bg-primary/10 px-4 py-1.5 rounded-full text-primary w-fit">
-                                <Clock className="h-5 w-5" /> Gi nå
-                            </div>
-                        </div>
+            {/* Date Navigation Header */}
+            <div className="flex items-center justify-between bg-card/50 backdrop-blur-sm p-4 rounded-xl border shadow-sm sticky top-16 z-40 md:static mt-4 md:mt-0">
+                <Button variant="ghost" size="icon" onClick={() => changeDate(-1)}>
+                    <ChevronLeft className="h-6 w-6" />
+                </Button>
 
-                        {loading ? (
-                            <div className="text-muted-foreground p-4">Laster plan...</div>
-                        ) : todayDoses.filter(d => d.status !== 'taken').length === 0 ? (
-                            <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 rounded-lg border border-dashed min-h-[150px]">
-                                {todayDoses.length > 0 && <PartyPopper className="h-8 w-8 text-emerald-500/50 mb-2" />}
-                                <p className="text-muted-foreground font-medium">Ingenting å gi akkurat nå :)</p>
-                            </div>
-                        ) : (
-                            <div className="grid gap-3">
-                                {todayDoses.filter(d => d.status !== 'taken').map((dose, i) => {
-                                    const doseKey = `${dose.planId}-${dose.scheduledTime}`
-                                    const isProcessing = processingDoseKey === doseKey
+                <div className="text-center">
+                    <h2 className="text-lg font-bold capitalize flex items-center gap-2 justify-center">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        {formatDateHeader(currentDate)}
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                        {currentDate.toLocaleDateString("nb-NO")}
+                    </p>
+                </div>
 
-                                    return (
-                                        <Card key={i} className={cn(
-                                            "transition-all border-l-4",
-                                            dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
-                                            dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
+                <Button variant="ghost" size="icon" onClick={() => changeDate(1)}>
+                    <ChevronRight className="h-6 w-6" />
+                </Button>
+            </div>
+
+            {/* Doses List */}
+            <div className="space-y-4">
+                {loading ? (
+                    <div className="text-center p-8 text-muted-foreground flex flex-col items-center gap-2">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        Laster medisiner...
+                    </div>
+                ) : doses.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-12 text-center bg-muted/20 rounded-lg border border-dashed">
+                        <PartyPopper className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                        <p className="text-muted-foreground font-medium">Ingen medisiner planlagt denne dagen.</p>
+                    </div>
+                ) : (
+                    <div className="grid gap-4">
+                        {doses.map((dose, i) => {
+                            const doseKey = `${dose.planId}-${dose.scheduledTime}`
+                            const isProcessing = processingDoseKey === doseKey
+                            const isTaken = dose.status === 'taken'
+
+                            return (
+                                <Card key={i} className={cn(
+                                    "transition-all border-l-4",
+                                    isTaken && "opacity-75 border-l-muted-foreground/30 bg-muted/30",
+                                    !isTaken && dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
+                                    !isTaken && dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
+                                    !isTaken && dose.status === 'upcoming' && "border-l-blue-400/50"
+                                )}>
+                                    <div className="flex items-center p-4">
+                                        <div className={cn(
+                                            "w-16 md:w-20 text-center font-bold text-lg",
+                                            isTaken && "text-muted-foreground decoration-line-through",
+                                            !isTaken && dose.status === 'overdue' && "text-red-500",
+                                            !isTaken && dose.status === 'upcoming' && "text-muted-foreground"
                                         )}>
-                                            <div className="flex items-center p-4">
-                                                <div className={cn(
-                                                    "w-16 md:w-20 text-center font-bold text-lg",
-                                                    dose.status === 'overdue' ? "text-red-500" : "text-foreground",
-                                                )}>
-                                                    {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
-                                                </div>
+                                            {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
+                                        </div>
 
-                                                <div className="flex-1 px-4">
-                                                    <div className="mb-1">
-                                                        <MedicineBadge
-                                                            medicine={{ id: dose.medicineId, name: dose.medicineName }}
-                                                            className="text-base font-semibold"
-                                                        />
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground">{dose.doseText}</p>
-                                                </div>
-
-                                                <div>
-                                                    <Button
-                                                        onClick={() => toggleDose(dose)}
-                                                        disabled={isProcessing}
-                                                        className={cn(
-                                                            "min-w-[100px] md:min-w-[110px] font-semibold transition-all shadow-sm",
-                                                            dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
-                                                            dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white"
-                                                        )}
-                                                    >
-                                                        {isProcessing ? (
-                                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                                        ) : (
-                                                            "Gi dose"
-                                                        )}
-                                                    </Button>
-                                                </div>
+                                        <div className="flex-1 px-4 min-w-0">
+                                            <div className="mb-1">
+                                                <MedicineBadge
+                                                    medicine={{ id: dose.medicineId, name: dose.medicineName }}
+                                                    className={cn("text-base font-semibold max-w-full", isTaken && "opacity-80")}
+                                                />
                                             </div>
-                                        </Card>
-                                    )
-                                })}
-                            </div>
-                        )}
-                    </section>
+                                            <p className="text-sm text-muted-foreground truncate">{dose.doseText}</p>
+                                        </div>
 
-                    {/* Completed / Given Today Section (Keep on left to see progress) */}
-                    {todayDoses.some(d => d.status === 'taken') && (
-                        <section className="space-y-4 pt-4 opacity-75">
-                            <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground px-2">
-                                <CheckCircle className="h-5 w-5" /> Gitt i dag
-                            </div>
-                            <div className="grid gap-3">
-                                {todayDoses.filter(d => d.status === 'taken').map((dose, i) => {
-                                    const doseKey = `${dose.planId}-${dose.scheduledTime}`
-                                    const isProcessing = processingDoseKey === doseKey
-
-                                    return (
-                                        <Card key={i} className="transition-all border-l-4 border-l-muted-foreground/30 bg-muted/30">
-                                            <div className="flex items-center p-4">
-                                                <div className="w-16 md:w-20 text-center font-bold text-lg text-muted-foreground decoration-line-through">
-                                                    {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
-                                                </div>
-
-                                                <div className="flex-1 px-4">
-                                                    <div className="mb-1">
-                                                        <MedicineBadge
-                                                            medicine={{ id: dose.medicineId, name: dose.medicineName }}
-                                                            className="text-base font-semibold opacity-80"
-                                                        />
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground">{dose.doseText}</p>
-                                                </div>
-
-                                                <div>
+                                        <div>
+                                            {isTaken ? (
+                                                <div className="flex flex-col items-end gap-1">
                                                     <Button
                                                         onClick={() => toggleDose(dose)}
                                                         disabled={isProcessing}
                                                         size="sm"
-                                                        className="min-w-[90px] font-semibold transition-all shadow-sm bg-emerald-100/10 text-emerald-500 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
+                                                        variant="outline"
+                                                        className="min-w-[100px] font-semibold transition-all shadow-sm bg-emerald-100/10 text-emerald-500 border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
                                                     >
                                                         {isProcessing ? (
                                                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -324,97 +365,56 @@ export default function DogDashboardPage() {
                                                             </>
                                                         )}
                                                     </Button>
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    )
-                                })}
-                            </div>
-                        </section>
-                    )}
-                </div>
 
-                {/* RIGHT COLUMN: PREVIEW & STATS */}
-                <div className="space-y-8">
-                    {/* Statistics Card (New) */}
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Sparkles className="h-5 w-5 text-secondary" />
-                                <h3 className="font-semibold text-lg">Dagens innsats</h3>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4 text-center">
-                                <div className="flex flex-col items-center gap-1">
-                                    <div className="h-12 w-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg border-4 border-blue-100">
-                                        {todayDoses.filter(d => d.status === 'taken').length}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Tatt</p>
-                                </div>
-                                <div className="flex flex-col items-center gap-1">
-                                    <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg border-4 border-emerald-100">
-                                        {Math.round((todayDoses.filter(d => d.status === 'taken').length / Math.max(todayDoses.length, 1)) * 100)}%
-                                    </div>
-                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Fullført</p>
-                                </div>
-                                <div className="flex flex-col items-center gap-1">
-                                    <div className="h-12 w-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-lg border-4 border-purple-100">
-                                        {todayDoses.length}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Totalt</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <section className="space-y-4">
-                        <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground">
-                            <CalendarDays className="h-5 w-5" /> I morgen
-                        </div>
-                        {tomorrowDoses.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">Ingen medisiner planlagt.</p>
-                        ) : (
-                            <div className="grid gap-3">
-                                {tomorrowDoses.map((dose, i) => (
-                                    <Card key={i} className="bg-muted/10 border-dashed">
-                                        <div className="flex items-center p-4">
-                                            <div className="w-16 md:w-20 text-center font-bold text-lg text-muted-foreground">
-                                                {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
-                                            </div>
-                                            <div className="flex-1 px-4">
-                                                <div className="mb-1">
-                                                    <MedicineBadge
-                                                        medicine={{ id: dose.medicineId, name: dose.medicineName }}
-                                                        className="opacity-90"
-                                                    />
+                                                    {dose.takenBy && dose.takenAt && (
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground animate-in fade-in slide-in-from-right-2">
+                                                            <span>
+                                                                {new Date(dose.takenAt).toLocaleTimeString("nb-NO", { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                            {dose.takenBy.avatarUrl ? (
+                                                                <img
+                                                                    src={dose.takenBy.avatarUrl}
+                                                                    alt={dose.takenBy.name}
+                                                                    className="w-5 h-5 rounded-full border shadow-sm"
+                                                                    title={`Gitt av ${dose.takenBy.name}`}
+                                                                />
+                                                            ) : (
+                                                                <div
+                                                                    className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold border"
+                                                                    title={`Gitt av ${dose.takenBy.name}`}
+                                                                >
+                                                                    {dose.takenBy.name?.[0]?.toUpperCase() || "?"}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">{dose.doseText}</p>
-                                            </div>
+                                            ) : (
+                                                <Button
+                                                    onClick={() => toggleDose(dose)}
+                                                    disabled={isProcessing || !dose.isToday}
+                                                    className={cn(
+                                                        "min-w-[100px] font-semibold transition-all shadow-sm",
+                                                        dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
+                                                        dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white",
+                                                        dose.status === 'upcoming' && "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+                                                        !dose.isToday && "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted"
+                                                    )}
+                                                >
+                                                    {isProcessing ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        "Gi dose"
+                                                    )}
+                                                </Button>
+                                            )}
                                         </div>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
-                    </section>
-                </div>
-            </div>
-
-            {/* Mobile Bottom Navigation */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-50 md:hidden">
-                <div className="max-w-2xl mx-auto flex gap-2">
-                    <Button asChild variant="outline" className="flex-1 shadow-sm h-12">
-                        <Link href={`/dog/${dogId}/history`}>Historikk</Link>
-                    </Button>
-                    <Button asChild className="flex-1 shadow-md h-12 bg-emerald-600 hover:bg-emerald-700">
-                        <Link href={`/dog/${dogId}/medicines`}>
-                            <Pill className="mr-2 h-4 w-4" /> Medisiner
-                        </Link>
-                    </Button>
-                    <Button asChild variant="secondary" className="flex-1 shadow-sm h-12 bg-pink-100 text-pink-900 hover:bg-pink-200 border border-pink-200">
-                        <Link href={`/dog/${dogId}/health/log`}>
-                            <Heart className="mr-2 h-4 w-4" /> Helse
-                        </Link>
-                    </Button>
-                </div>
+                                    </div>
+                                </Card>
+                            )
+                        })}
+                    </div>
+                )}
             </div>
 
             <div className="pt-8 border-t flex flex-col items-center gap-4">
@@ -440,6 +440,8 @@ export default function DogDashboardPage() {
                     </div>
                 )}
             </div>
+
+
         </div>
     )
 }

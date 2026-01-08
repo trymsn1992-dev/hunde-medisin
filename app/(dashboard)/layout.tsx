@@ -146,9 +146,36 @@ export default function DashboardLayout({
                     </div>
                 </header>
 
-                <main className="flex-1 container mx-auto px-4 py-8 md:p-8 max-w-7xl">
+                <main className="flex-1 container px-4 py-8 md:p-8 max-w-[402px] md:max-w-7xl mx-auto pb-24">
                     {children}
                 </main>
+
+                {/* Mobile Bottom Navigation - Global */}
+                {dogId && (
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-lg border-t z-50 md:hidden pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                        <div className="max-w-md mx-auto flex justify-around items-center">
+                            {navItems.map((item) => {
+                                const isActive = item.exact
+                                    ? pathname === item.href
+                                    : pathname.startsWith(item.href)
+
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={cn(
+                                            "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors min-w-[64px]",
+                                            isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <item.icon className={cn("h-6 w-6", isActive && "fill-current/20")} />
+                                        <span className="text-[10px] font-medium">{item.label}</span>
+                                    </Link>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )

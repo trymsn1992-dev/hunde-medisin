@@ -199,27 +199,27 @@ export default function MedicinesPage() {
                     return (
                         <Card key={med.id} className={isPaused ? "opacity-75 border-dashed" : ""}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <div>
+                                <div className="flex-1 min-w-0 pr-2">
                                     <div className="flex items-center gap-2">
                                         {/* Use MedicineBadge instead of plain text */}
-                                        <Link href={`/dog/${dogId}/history?medicineId=${med.id}`} className="hover:opacity-80 transition-opacity block mb-1">
-                                            <MedicineBadge medicine={med} className="text-base" />
+                                        <Link href={`/dog/${dogId}/history?medicineId=${med.id}`} className="hover:opacity-80 transition-opacity block mb-1 truncate max-w-full">
+                                            <MedicineBadge medicine={med} className="text-base max-w-full" />
                                         </Link>
 
                                         {isPaused && (
-                                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium">
+                                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium shrink-0">
                                                 Pauset
                                             </span>
                                         )}
                                     </div>
-                                    <CardDescription>
+                                    <div className="text-sm text-muted-foreground truncate">
                                         {med.strength}
                                         {infoString && (
-                                            <span className="block mt-1 text-primary/80 font-medium">
+                                            <span className="block mt-1 text-primary/80 font-medium truncate">
                                                 {infoString}
                                             </span>
                                         )}
-                                    </CardDescription>
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     {/* PAUSE / RESUME BUTTON */}

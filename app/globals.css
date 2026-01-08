@@ -83,6 +83,18 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  /* Prevent horizontal scroll */
+  touch-action: manipulation;
+  /* Improve tap response, prevent double-tap zoom on some devices */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  /* Fix for mobile Safari height */
+}
+
+html {
+  height: -webkit-fill-available;
+  /* Fix for mobile Safari height */
 }
 
 /* Utilities */
