@@ -204,158 +204,199 @@ export default function DogDashboardPage() {
     }
 
     return (
-        <div className="pb-24 sm:pb-8 space-y-8 max-w-5xl mx-auto">
-            {/* Active / Due Now Section */}
-            <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xl font-semibold bg-primary/10 px-4 py-1.5 rounded-full text-primary w-fit">
-                        <Clock className="h-5 w-5" /> Gi nå
-                    </div>
-                </div>
+    return (
+        <div className="pb-24 md:pb-8 space-y-8 max-w-5xl mx-auto">
+            {/* Desktop Grid Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
-                {loading ? (
-                    <div className="text-muted-foreground">Laster plan...</div>
-                ) : todayDoses.filter(d => d.status !== 'taken').length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 rounded-lg border border-dashed">
-                        {/* Only show PartyPopper if we actually had doses and finished them */}
-                        {todayDoses.length > 0 && <PartyPopper className="h-8 w-8 text-emerald-500/50 mb-2" />}
-                        <p className="text-muted-foreground font-medium">Ingenting å gi akkurat nå :)</p>
-                    </div>
-                ) : (
-                    <div className="grid gap-3">
-                        {todayDoses.filter(d => d.status !== 'taken').map((dose, i) => {
-                            const doseKey = `${dose.planId}-${dose.scheduledTime}`
-                            const isProcessing = processingDoseKey === doseKey
+                {/* LEFT COLUMN: ACTIVE TASKS */}
+                <div className="space-y-8">
+                    {/* Active / Due Now Section */}
+                    <section className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xl font-semibold bg-primary/10 px-4 py-1.5 rounded-full text-primary w-fit">
+                                <Clock className="h-5 w-5" /> Gi nå
+                            </div>
+                        </div>
 
-                            return (
-                                <Card key={i} className={cn(
-                                    "transition-all border-l-4",
-                                    dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
-                                    dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
-                                )}>
-                                    <div className="flex items-center p-4">
-                                        <div className={cn(
-                                            "w-20 text-center font-bold text-lg",
-                                            dose.status === 'overdue' ? "text-red-500" : "text-foreground",
+                        {loading ? (
+                            <div className="text-muted-foreground p-4">Laster plan...</div>
+                        ) : todayDoses.filter(d => d.status !== 'taken').length === 0 ? (
+                            <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 rounded-lg border border-dashed min-h-[150px]">
+                                {todayDoses.length > 0 && <PartyPopper className="h-8 w-8 text-emerald-500/50 mb-2" />}
+                                <p className="text-muted-foreground font-medium">Ingenting å gi akkurat nå :)</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-3">
+                                {todayDoses.filter(d => d.status !== 'taken').map((dose, i) => {
+                                    const doseKey = `${dose.planId}-${dose.scheduledTime}`
+                                    const isProcessing = processingDoseKey === doseKey
+
+                                    return (
+                                        <Card key={i} className={cn(
+                                            "transition-all border-l-4",
+                                            dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
+                                            dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
                                         )}>
-                                            {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
-                                        </div>
+                                            <div className="flex items-center p-4">
+                                                <div className={cn(
+                                                    "w-16 md:w-20 text-center font-bold text-lg",
+                                                    dose.status === 'overdue' ? "text-red-500" : "text-foreground",
+                                                )}>
+                                                    {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
+                                                </div>
 
-                                        <div className="flex-1 px-4">
-                                            <div className="mb-1">
-                                                <MedicineBadge
-                                                    medicine={{ id: dose.medicineId, name: dose.medicineName }}
-                                                    className="text-base font-semibold"
-                                                />
+                                                <div className="flex-1 px-4">
+                                                    <div className="mb-1">
+                                                        <MedicineBadge
+                                                            medicine={{ id: dose.medicineId, name: dose.medicineName }}
+                                                            className="text-base font-semibold"
+                                                        />
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground">{dose.doseText}</p>
+                                                </div>
+
+                                                <div>
+                                                    <Button
+                                                        onClick={() => toggleDose(dose)}
+                                                        disabled={isProcessing}
+                                                        className={cn(
+                                                            "min-w-[100px] md:min-w-[110px] font-semibold transition-all shadow-sm",
+                                                            dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
+                                                            dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white"
+                                                        )}
+                                                    >
+                                                        {isProcessing ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            "Gi dose"
+                                                        )}
+                                                    </Button>
+                                                </div>
                                             </div>
-                                            <p className="text-sm text-muted-foreground">{dose.doseText}</p>
-                                        </div>
+                                        </Card>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </section>
 
-                                        <div>
-                                            <Button
-                                                onClick={() => toggleDose(dose)}
-                                                disabled={isProcessing}
-                                                className={cn(
-                                                    "min-w-[110px] font-semibold transition-all shadow-sm",
-                                                    dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
-                                                    dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white"
-                                                )}
-                                            >
-                                                {isProcessing ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    "Gi dose"
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </Card>
-                            )
-                        })}
-                    </div>
-                )}
-            </section>
+                    {/* Completed / Given Today Section (Keep on left to see progress) */}
+                    {todayDoses.some(d => d.status === 'taken') && (
+                        <section className="space-y-4 pt-4 opacity-75">
+                            <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground px-2">
+                                <CheckCircle className="h-5 w-5" /> Gitt i dag
+                            </div>
+                            <div className="grid gap-3">
+                                {todayDoses.filter(d => d.status === 'taken').map((dose, i) => {
+                                    const doseKey = `${dose.planId}-${dose.scheduledTime}`
+                                    const isProcessing = processingDoseKey === doseKey
 
-            {/* Completed / Given Today Section */}
-            {todayDoses.some(d => d.status === 'taken') && (
-                <section className="space-y-4 pt-4 opacity-75">
-                    <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground px-2">
-                        <CheckCircle className="h-5 w-5" /> Gitt i dag
-                    </div>
-                    <div className="grid gap-3">
-                        {todayDoses.filter(d => d.status === 'taken').map((dose, i) => {
-                            const doseKey = `${dose.planId}-${dose.scheduledTime}`
-                            const isProcessing = processingDoseKey === doseKey
+                                    return (
+                                        <Card key={i} className="transition-all border-l-4 border-l-muted-foreground/30 bg-muted/30">
+                                            <div className="flex items-center p-4">
+                                                <div className="w-16 md:w-20 text-center font-bold text-lg text-muted-foreground decoration-line-through">
+                                                    {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
+                                                </div>
 
-                            return (
-                                <Card key={i} className="transition-all border-l-4 border-l-muted-foreground/30 bg-muted/30">
-                                    <div className="flex items-center p-4">
-                                        <div className="w-20 text-center font-bold text-lg text-muted-foreground decoration-line-through">
-                                            {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
-                                        </div>
+                                                <div className="flex-1 px-4">
+                                                    <div className="mb-1">
+                                                        <MedicineBadge
+                                                            medicine={{ id: dose.medicineId, name: dose.medicineName }}
+                                                            className="text-base font-semibold opacity-80"
+                                                        />
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground">{dose.doseText}</p>
+                                                </div>
 
-                                        <div className="flex-1 px-4">
-                                            <div className="mb-1">
-                                                <MedicineBadge
-                                                    medicine={{ id: dose.medicineId, name: dose.medicineName }}
-                                                    className="text-base font-semibold opacity-80"
-                                                />
+                                                <div>
+                                                    <Button
+                                                        onClick={() => toggleDose(dose)}
+                                                        disabled={isProcessing}
+                                                        size="sm"
+                                                        className="min-w-[90px] font-semibold transition-all shadow-sm bg-emerald-100/10 text-emerald-500 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
+                                                    >
+                                                        {isProcessing ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <>
+                                                                <CheckCircle className="mr-2 h-4 w-4" /> Gitt
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
                                             </div>
-                                            <p className="text-sm text-muted-foreground">{dose.doseText}</p>
-                                        </div>
-
-                                        <div>
-                                            <Button
-                                                onClick={() => toggleDose(dose)}
-                                                disabled={isProcessing}
-                                                className="min-w-[110px] font-semibold transition-all shadow-sm bg-emerald-100/10 text-emerald-500 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
-                                            >
-                                                {isProcessing ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle className="mr-2 h-4 w-4" /> Gitt
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </Card>
-                            )
-                        })}
-                    </div>
-                </section>
-            )}
-
-            <section className="space-y-4 opacity-60">
-                <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground">
-                    <CalendarDays className="h-5 w-5" /> I morgen
+                                        </Card>
+                                    )
+                                })}
+                            </div>
+                        </section>
+                    )}
                 </div>
-                {tomorrowDoses.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">Ingen medisiner planlagt.</p>
-                ) : (
-                    <div className="grid gap-3">
-                        {tomorrowDoses.map((dose, i) => (
-                            <Card key={i} className="bg-muted/10 border-dashed">
-                                <div className="flex items-center p-4">
-                                    <div className="w-20 text-center font-bold text-lg text-muted-foreground">
-                                        {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
+
+                {/* RIGHT COLUMN: PREVIEW & STATS */}
+                <div className="space-y-8">
+                    {/* Statistics Card (New) */}
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Sparkles className="h-5 w-5 text-secondary" />
+                                <h3 className="font-semibold text-lg">Dagens innsats</h3>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 text-center">
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="h-12 w-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg border-4 border-blue-100">
+                                        {todayDoses.filter(d => d.status === 'taken').length}
                                     </div>
-                                    <div className="flex-1 px-4">
-                                        <div className="mb-1">
-                                            <MedicineBadge
-                                                medicine={{ id: dose.medicineId, name: dose.medicineName }}
-                                                className="opacity-90"
-                                            />
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">{dose.doseText}</p>
-                                    </div>
+                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Tatt</p>
                                 </div>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-            </section>
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg border-4 border-emerald-100">
+                                        {Math.round((todayDoses.filter(d => d.status === 'taken').length / Math.max(todayDoses.length, 1)) * 100)}%
+                                    </div>
+                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Fullført</p>
+                                </div>
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="h-12 w-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-lg border-4 border-purple-100">
+                                        {todayDoses.length}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Totalt</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <section className="space-y-4">
+                        <div className="flex items-center gap-2 text-xl font-semibold text-muted-foreground">
+                            <CalendarDays className="h-5 w-5" /> I morgen
+                        </div>
+                        {tomorrowDoses.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">Ingen medisiner planlagt.</p>
+                        ) : (
+                            <div className="grid gap-3">
+                                {tomorrowDoses.map((dose, i) => (
+                                    <Card key={i} className="bg-muted/10 border-dashed">
+                                        <div className="flex items-center p-4">
+                                            <div className="w-16 md:w-20 text-center font-bold text-lg text-muted-foreground">
+                                                {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
+                                            </div>
+                                            <div className="flex-1 px-4">
+                                                <div className="mb-1">
+                                                    <MedicineBadge
+                                                        medicine={{ id: dose.medicineId, name: dose.medicineName }}
+                                                        className="opacity-90"
+                                                    />
+                                                </div>
+                                                <p className="text-sm text-muted-foreground">{dose.doseText}</p>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+                </div>
+            </div>
 
             {/* Mobile Bottom Navigation */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-50 md:hidden">

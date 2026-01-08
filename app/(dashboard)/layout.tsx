@@ -49,43 +49,40 @@ export default function DashboardLayout({
     ] : []
 
     return (
-        <div className="min-h-screen flex flex-col bg-background">
-            {/* Header */}
-            <header className="border-b bg-card/50 backdrop-blur-md sticky top-0 z-50 transition-all">
-                <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-6">
-                        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary shrink-0 transition-opacity hover:opacity-80">
+        <div className="min-h-screen flex bg-background">
+            {/* Desktop Sidebar */}
+            {dogId && (
+                <aside className="hidden md:flex w-64 flex-col border-r bg-card/50 backdrop-blur-md sticky top-0 h-screen shrink-0">
+                    <div className="h-16 flex items-center px-6 border-b">
+                        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary transition-opacity hover:opacity-80">
                             <Dog className="h-6 w-6" />
-                            <span className="hidden sm:inline">Bjeffer</span>
+                            <span>Bjeffer</span>
                         </Link>
-
-                        {dogId && activeDog && (
-                            <Link href={`/dog/${dogId}/profile`} className="flex items-center gap-3 pl-6 border-l group">
-                                <div className="relative">
-                                    <div className="h-10 w-10 rounded-full bg-muted overflow-hidden border-2 border-background shadow-sm group-hover:border-primary/50 transition-colors">
-                                        {activeDog.image_url ? (
-                                            <img src={activeDog.image_url} alt={activeDog.name} className="h-full w-full object-cover" />
-                                        ) : (
-                                            <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary font-bold text-lg">
-                                                {activeDog.name.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 shadow-sm">
-                                        <div className="bg-green-500 h-2.5 w-2.5 rounded-full border-2 border-background"></div>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="font-semibold text-sm leading-none group-hover:text-primary transition-colors">{activeDog.name}</span>
-                                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Medisinsporing</span>
-                                </div>
-                            </Link>
-                        )}
                     </div>
 
-                    {/* Desktop Navigation - Centered */}
-                    {dogId && (
-                        <nav className="hidden md:flex items-center flex-1 justify-center">
+                    <div className="p-4 flex-1">
+                        {/* Active Dog Profile Summary in Sidebar */}
+                        {activeDog && (
+                            <div className="mb-6 p-3 rounded-lg bg-muted/30 border flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-muted overflow-hidden border filter shadow-sm">
+                                    {activeDog.image_url ? (
+                                        <img src={activeDog.image_url} alt={activeDog.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                        <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary font-bold text-lg">
+                                            {activeDog.name.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="overflow-hidden">
+                                    <p className="font-semibold text-sm truncate">{activeDog.name}</p>
+                                    <Link href={`/dog/${dogId}/profile`} className="text-[10px] text-primary hover:underline block">
+                                        Rediger profil
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
+
+                        <nav className="space-y-1">
                             {navItems.map((item) => {
                                 const isActive = item.exact
                                     ? pathname === item.href
@@ -96,9 +93,9 @@ export default function DashboardLayout({
                                         key={item.href}
                                         href={item.href}
                                         className={cn(
-                                            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all mx-1",
+                                            "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all",
                                             isActive
-                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                ? "bg-primary/10 text-primary"
                                                 : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                                         )}
                                     >
@@ -108,21 +105,51 @@ export default function DashboardLayout({
                                 )
                             })}
                         </nav>
-                    )}
+                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                        {/* Mobile: Just show a simpler logout or maybe nothing extra since we focus on desktop nav here */}
-                        <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
+                    <div className="p-4 border-t">
+                        <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-muted-foreground hover:text-foreground">
                             <LogOut className="h-4 w-4 mr-2" />
-                            <span className="hidden sm:inline">Logg ut</span>
+                            Logg ut
                         </Button>
                     </div>
-                </div>
-            </header>
+                </aside>
+            )}
 
-            <main className="flex-1 container mx-auto px-4 py-8">
-                {children}
-            </main>
+            <div className="flex-1 flex flex-col min-w-0">
+                {/* Mobile Header (Hidden on Desktop if Sidebar handles logo? No, usually keep header for mobile) */}
+                {/* Actually, let's keep a Header for Mobile ONLY, or adapted for desktop (e.g. just user profile) */}
+                <header className="border-b bg-card/50 backdrop-blur-md sticky top-0 z-50 md:hidden">
+                    <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+                        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary shrink-0">
+                            <Dog className="h-6 w-6" />
+                            <span>Bjeffer</span>
+                        </Link>
+
+                        <div className="flex items-center gap-2">
+                            {/* Mobile Active Dog Indicator */}
+                            {dogId && activeDog && (
+                                <Link href={`/dog/${dogId}/profile`} className="h-8 w-8 rounded-full bg-muted overflow-hidden border border-primary/20">
+                                    {activeDog.image_url ? (
+                                        <img src={activeDog.image_url} alt={activeDog.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                        <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary font-bold text-xs">
+                                            {activeDog.name.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                </Link>
+                            )}
+                            <Button variant="ghost" size="icon" onClick={handleLogout}>
+                                <LogOut className="h-5 w-5 text-muted-foreground" />
+                            </Button>
+                        </div>
+                    </div>
+                </header>
+
+                <main className="flex-1 container mx-auto px-4 py-8 md:p-8 max-w-7xl">
+                    {children}
+                </main>
+            </div>
         </div>
     )
 }
