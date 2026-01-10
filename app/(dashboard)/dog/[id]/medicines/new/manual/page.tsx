@@ -7,10 +7,14 @@ import { createMedicine } from "@/app/actions/medicines"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Clock, Palette } from "lucide-react"
+import { ArrowLeft, Clock, Palette, Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 // Import colors
 import { MED_COLORS } from "@/lib/medicine-utils"
+import { searchCommonMedicines } from "@/app/actions/medicines"
+import { searchFelleskatalogen, FelleskatalogenResult } from "@/app/actions/felleskatalogen"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 export default function ManualEntryPage() {
     const params = useParams()
@@ -27,6 +31,45 @@ export default function ManualEntryPage() {
     const [notes, setNotes] = useState("")
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]) // YYYY-MM-DD
     const [selectedColor, setSelectedColor] = useState<string>("")
+
+    // Combobox State
+    const [openCombobox, setOpenCombobox] = useState(false)
+    const [suggestions, setSuggestions] = useState<any[]>([])
+    const [searchTerm, setSearchTerm] = useState("")
+
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(async () => {
+            if (searchTerm.length > 1) {
+                setSuggestions([]) // Clear previous
+                // Parallel search
+                // 1. Local common DB
+                const localPromise = searchCommonMedicines(searchTerm)
+                // 2. Felleskatalogen
+                const fkPromise = searchFelleskatalogen(searchTerm)
+
+                const [local, fk] = await Promise.all([localPromise, fkPromise])
+
+                // Merge: prioritize local, avoid exact dupes?
+                // Just map FK results to match structure
+                const fkMapped = fk.map(f => ({
+                    id: f.url, // Use URL as ID for key
+                    name: f.name,
+                    default_strength: f.strength,
+                    source: "Felleskatalogen"
+                }))
+
+                // Combine
+                const combined = [...(local || []), ...fkMapped]
+                setSuggestions(combined)
+            } else {
+                setSuggestions([])
+            }
+        }, 300)
+
+        return () => clearTimeout(delayDebounceFn)
+    }, [searchTerm])
+
+
 
     // Schedule States
     // Simplified: Checkboxes for standard times
@@ -115,9 +158,73 @@ export default function ManualEntryPage() {
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-4">
-                            <div className="space-y-2">
+                            <div className="space-y-2 flex flex-col">
                                 <label className="text-sm font-medium">Medisinnavn</label>
-                                <Input placeholder="f.eks. Rimadyl" value={name} onChange={e => setName(e.target.value)} required />
+                                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={openCombobox}
+                                            className="justify-between w-full"
+                                        >
+                                            {name || "Søk etter medisin..."}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-full p-0" align="start">
+                                        <Command shouldFilter={false}>
+                                            <CommandInput placeholder="Søk i felleskatalog..." onValueChange={(val) => {
+                                                setSearchTerm(val)
+                                                setName(val) // Allow manual override typing
+                                            }} />
+                                            <CommandList>
+                                                <CommandEmpty>Ingen treff. Du kan skrive navn manuelt.</CommandEmpty>
+                                                {suggestions.length > 0 && (
+                                                    <CommandGroup>
+                                                        {suggestions.map((med) => (
+                                                            <CommandItem
+                                                                key={med.id}
+                                                                value={med.name}
+                                                                onSelect={() => {
+                                                                    setName(med.name)
+                                                                    if (med.default_strength) setStrength(med.default_strength)
+                                                                    setOpenCombobox(false)
+                                                                }}
+                                                                onMouseDown={(e) => {
+                                                                    // Fix for "Click not working": prevent default focus loss
+                                                                    e.preventDefault()
+                                                                    e.stopPropagation()
+                                                                }}
+                                                                onClick={() => {
+                                                                     // Manual trigger to be safe
+                                                                    setName(med.name)
+                                                                    if (med.default_strength) setStrength(med.default_strength)
+                                                                    setOpenCombobox(false)
+                                                                }}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        name === med.name ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                <div className="flex flex-col">
+                                                                    <span>{med.name}</span>
+                                                                    <div className="flex gap-2 text-xs text-muted-foreground">
+                                                                        {med.default_strength && <span>{med.default_strength}</span>}
+                                                                        {med.source === "Felleskatalogen" && <span className="text-secondary-foreground/50 border rounded px-1">Nett</span>}
+                                                                    </div>
+                                                                </div>
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                )}
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                {/* Fallback Input if they just want to type manually without popover interaction (handled by Combobox typing above, but cleaner to have this logic) */}
                             </div>
 
                             {/* Color Picker */}

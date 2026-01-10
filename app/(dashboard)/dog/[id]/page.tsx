@@ -280,22 +280,22 @@ export default function DogDashboardPage() {
         <div className="space-y-6 max-w-5xl mx-auto">
 
             {/* Date Navigation Header */}
-            <div className="flex items-center justify-between bg-card/50 backdrop-blur-sm p-4 rounded-xl border shadow-sm sticky top-16 z-40 md:static mt-4 md:mt-0">
-                <Button variant="ghost" size="icon" onClick={() => changeDate(-1)}>
+            <div className="flex items-center justify-between bg-card/50 backdrop-blur-sm p-4 rounded-xl border shadow-sm sticky top-16 z-40 md:static mt-4 md:mt-0 w-full animate-in fade-in slide-in-from-top-4">
+                <Button variant="ghost" size="icon" onClick={() => changeDate(-1)} className="shrink-0">
                     <ChevronLeft className="h-6 w-6" />
                 </Button>
 
-                <div className="text-center">
-                    <h2 className="text-lg font-bold capitalize flex items-center gap-2 justify-center">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        {formatDateHeader(currentDate)}
+                <div className="text-center flex-1 min-w-0 px-2">
+                    <h2 className="text-lg font-bold capitalize flex items-center gap-2 justify-center truncate">
+                        <Calendar className="h-4 w-4 text-primary shrink-0" />
+                        <span className="truncate">{formatDateHeader(currentDate)}</span>
                     </h2>
-                    <p className="text-xs text-muted-foreground">
-                        {currentDate.toLocaleDateString("nb-NO")}
+                    <p className="text-xs text-muted-foreground truncate">
+                        {currentDate.toLocaleDateString("nb-NO", { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                 </div>
 
-                <Button variant="ghost" size="icon" onClick={() => changeDate(1)}>
+                <Button variant="ghost" size="icon" onClick={() => changeDate(1)} className="shrink-0">
                     <ChevronRight className="h-6 w-6" />
                 </Button>
             </div>

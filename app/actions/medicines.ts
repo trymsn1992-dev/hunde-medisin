@@ -319,3 +319,22 @@ export async function resumeMedicine(medicineId: string, mode: 'remaining' | 'ne
         return { success: false, error: "Failed to resume medicine" }
     }
 }
+
+// Search Common Medicines
+export async function searchCommonMedicines(query: string) {
+    const supabase = await createClient()
+
+    // Simple text search
+    const { data, error } = await supabase
+        .from('common_medicines')
+        .select('name, default_strength, id')
+        .ilike('name', `%${query}%`)
+        .limit(10)
+
+    if (error) {
+        console.error("Search failed:", error)
+        return []
+    }
+
+    return data || []
+}

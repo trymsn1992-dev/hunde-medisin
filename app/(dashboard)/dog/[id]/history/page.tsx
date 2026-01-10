@@ -7,6 +7,16 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Calendar as CalendarIcon, List as ListIcon, ChevronLeft, ChevronRight, Activity, Heart, AlertCircle, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 // date-fns
 import { nb } from "date-fns/locale"
 import {
@@ -48,6 +58,7 @@ export default function HistoryPage() {
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set())
+    const [entryToDelete, setEntryToDelete] = useState<string | null>(null)
 
     const toggleExpand = (id: string) => {
         setExpandedLogs(prev => {
@@ -101,14 +112,26 @@ export default function HistoryPage() {
         const medId = searchParams.get("medicineId")
         if (medId) setSelectedMedicine(medId)
     }, [searchParams])
-    const handleDeleteHealthLog = async (logId: string) => {
-        if (!confirm("Er du sikker på at du vil slette denne helseloggen?")) return
+    const handleDeleteClick = (logId: string) => {
+        setEntryToDelete(logId)
+    }
 
-        const res = await deleteHealthLog(logId)
-        if (res.success) {
-            setHealthLogs(prev => prev.filter(h => h.id !== logId))
-        } else {
-            alert("Feil ved sletting: " + res.error)
+    const executeDelete = async () => {
+        if (!entryToDelete) return
+
+        try {
+            console.log("Attempting to delete log:", entryToDelete)
+            const res = await deleteHealthLog(entryToDelete)
+            if (res.success) {
+                setHealthLogs(prev => prev.filter(h => h.id !== entryToDelete))
+                setEntryToDelete(null)
+            } else {
+                console.error("Delete failed:", res.error)
+                alert("Kunne ikke slette logg: " + res.error)
+            }
+        } catch (err) {
+            console.error("Delete exception:", err)
+            alert("En feil oppstod under sletting.")
         }
     }
 
@@ -348,7 +371,7 @@ export default function HistoryPage() {
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation()
-                                                                            handleDeleteHealthLog(log.id)
+                                                                            handleDeleteClick(log.id)
                                                                         }}
                                                                         className="p-1 hover:bg-red-100 rounded text-red-400 hover:text-red-600 transition-colors"
                                                                     >
@@ -547,7 +570,7 @@ export default function HistoryPage() {
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
-                                                                handleDeleteHealthLog(h.id)
+                                                                handleDeleteClick(h.id)
                                                             }}
                                                             className="p-1 hover:bg-black/5 rounded text-muted-foreground hover:text-red-600 transition-colors"
                                                         >
@@ -630,6 +653,23 @@ export default function HistoryPage() {
                     )}
                 </div>
             )}
+
+            <AlertDialog open={!!entryToDelete} onOpenChange={(open) => !open && setEntryToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Slette helselogg?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Denne handlingen kan ikke angres. Loggen vil bli slettet permanent fra historikken.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                        <AlertDialogAction onClick={executeDelete} className="bg-destructive hover:bg-destructive/90">
+                            Slett
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

@@ -232,7 +232,7 @@ export default function LogHealthPage() {
             <div className="h-20" /> {/* Spacer */}
 
             {/* Fixed Bottom Save Button */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t z-10 max-w-5xl mx-auto">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t z-50 max-w-5xl mx-auto pb-[calc(1rem+env(safe-area-inset-bottom)+4rem)] md:pb-4">
                 <Button className="w-full h-12 text-lg shadow-lg" onClick={handleSubmit} disabled={loading}>
                     <Save className="mr-2 h-5 w-5" />
                     {loading ? "Lagrer..." : "Lagre Logg"}

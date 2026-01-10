@@ -156,3 +156,16 @@ export async function joinDogByInvite(inviteCode: string) {
         return { message: "Unexpected error" }
     }
 }
+
+export async function updateLastVisitedDog(dogId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    // Fire and forget - we don't need to await this or block UI
+    await supabase
+        .from('profiles')
+        .update({ last_visited_dog_id: dogId })
+        .eq('id', user.id)
+}
