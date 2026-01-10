@@ -321,7 +321,7 @@ export default function DogDashboardPage() {
 
                             return (
                                 <Card key={i} className={cn(
-                                    "transition-all border-l-4",
+                                    "transition-all border-l-4 w-full max-w-[368px] mx-auto md:max-w-none",
                                     isTaken && "opacity-75 border-l-muted-foreground/30 bg-muted/30",
                                     !isTaken && dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
                                     !isTaken && dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
