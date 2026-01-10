@@ -1,5 +1,7 @@
 "use client"
 
+import { cn } from "@/lib/utils"
+
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -197,7 +199,10 @@ export default function MedicinesPage() {
                     }
 
                     return (
-                        <Card key={med.id} className={isPaused ? "opacity-75 border-dashed" : ""}>
+                        <Card key={med.id} className={cn(
+                            "w-full max-w-[368px] mx-auto md:max-w-none",
+                            isPaused && "opacity-75 border-dashed"
+                        )}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <div className="flex-1 min-w-0 pr-2">
                                     <div className="flex items-center gap-2">

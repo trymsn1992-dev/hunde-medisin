@@ -121,10 +121,12 @@ export async function createMedicine(data: {
         revalidatePath('/', 'layout')
         return { success: true, id: med.id }
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         console.error("Create Medicine Error:", error)
-        const message = error instanceof Error ? error.message : "Failed to create medicine"
-        return { success: false, error: message }
+        const message = error?.message || (typeof error === 'string' ? error : "Failed to create medicine")
+        // Also include details if available (common in Postgrest errors)
+        const detailedMessage = error?.details ? `${message} (${error.details})` : message
+        return { success: false, error: detailedMessage }
     }
 }
 
