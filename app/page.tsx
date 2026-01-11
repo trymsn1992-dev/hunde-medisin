@@ -45,7 +45,6 @@ export default async function Home() {
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-4xl gap-12 mt-10 md:mt-0">
         <div className="text-center space-y-6">
           <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-primary flex items-center justify-center gap-4">
-            <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
             Hundemedisin
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
