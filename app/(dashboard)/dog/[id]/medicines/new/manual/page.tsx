@@ -81,12 +81,14 @@ export default function ManualEntryPage() {
         const pStrength = searchParams.get("strength")
         const pDose = searchParams.get("dose")
         const pDuration = searchParams.get("duration")
+        const pColor = searchParams.get("color")
         const pTimes = searchParams.getAll("times")
 
         if (pName) setName(pName)
         if (pStrength) setStrength(pStrength)
         if (pDose) setDoseText(pDose)
         if (pDuration) setDuration(pDuration)
+        if (pColor && MED_COLORS.includes(pColor)) setSelectedColor(pColor)
 
         // If times are in URL, use them. Otherwise default to 08:00 and 20:00 (or leave empty if user prefers)
         // User requested: if simply "daily", default to one time. Our OCR defaults to 08:00 for daily.
@@ -197,7 +199,7 @@ export default function ManualEntryPage() {
                                                                     e.stopPropagation()
                                                                 }}
                                                                 onClick={() => {
-                                                                     // Manual trigger to be safe
+                                                                    // Manual trigger to be safe
                                                                     setName(med.name)
                                                                     if (med.default_strength) setStrength(med.default_strength)
                                                                     setOpenCombobox(false)

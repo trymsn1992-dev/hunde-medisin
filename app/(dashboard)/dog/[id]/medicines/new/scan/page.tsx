@@ -23,7 +23,7 @@ export default function ScanMedicinePage() {
     const [imageSrc, setImageSrc] = useState<string | null>(null)
     const [isScanning, setIsScanning] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [scannedData, setScannedData] = useState<{ name?: string, strength?: string, dose?: string, duration?: string, frequency?: string[], category?: string } | null>(null)
+    const [scannedData, setScannedData] = useState<{ name?: string, strength?: string, dose?: string, duration?: string, frequency?: string[], category?: string, color?: string } | null>(null)
     const [facingMode, setFacingMode] = useState<"user" | "environment">("environment")
 
     // Camera Constraints for High Res
@@ -102,7 +102,8 @@ export default function ScanMedicinePage() {
                 dose: result.dose_text || undefined,
                 duration: result.duration_days?.toString() || undefined,
                 frequency: result.frequency,
-                category: result.category || undefined
+                category: result.category || undefined,
+                color: result.color || undefined
             })
 
             // Haptic feedback if available (mobile)
@@ -132,6 +133,7 @@ export default function ScanMedicinePage() {
         if (scannedData?.strength) query.set("strength", scannedData.strength)
         if (scannedData?.dose) query.set("dose", scannedData.dose)
         if (scannedData?.duration) query.set("duration", scannedData.duration)
+        if (scannedData?.color) query.set("color", scannedData.color)
         if (scannedData?.frequency) {
             scannedData.frequency.forEach(t => query.append("times", t))
         }
@@ -250,6 +252,23 @@ export default function ScanMedicinePage() {
                                                 <span className="text-muted-foreground text-xs uppercase tracking-wider">Dosering</span>
                                                 <p className="font-medium">{scannedData.dose || "-"}</p>
                                             </div>
+                                            {scannedData.color && (
+                                                <div className="col-span-2 flex items-center gap-2 mt-1">
+                                                    <span className="text-muted-foreground text-xs uppercase tracking-wider">Pakningsfarge</span>
+                                                    <div className={cn("h-4 w-4 rounded-full border shadow-sm",
+                                                        // Map English color to rough Tailwind bg for preview
+                                                        {
+                                                            "bg-red-500": scannedData.color === "red",
+                                                            "bg-orange-500": scannedData.color === "orange",
+                                                            "bg-yellow-500": scannedData.color === "yellow",
+                                                            "bg-green-500": scannedData.color === "green",
+                                                            "bg-blue-500": scannedData.color === "blue",
+                                                            "bg-purple-500": scannedData.color === "purple",
+                                                            "bg-pink-500": scannedData.color === "pink"
+                                                        }
+                                                    )} />
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex gap-2 pt-2">
                                             <Button variant="outline" className="flex-1" onClick={clearImage}>Prøv igjen</Button>

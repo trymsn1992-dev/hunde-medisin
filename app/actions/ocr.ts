@@ -13,6 +13,7 @@ export type MedicationInfo = {
     duration_days: number | null
     frequency: string[]
     category: string | null
+    color?: string | null
 }
 
 export async function scanMedicationImage(imageBase64: string): Promise<MedicationInfo> {
@@ -57,6 +58,9 @@ export async function scanMedicationImage(imageBase64: string): Promise<Medicati
                       - If text says "3 ganger daglig" -> return ["08:00", "14:00", "20:00"]
                       - If text says "4 ganger daglig" -> return ["08:00", "12:00", "16:00", "20:00"]
                       - Return sorted unique times.
+                    - color: The DOMINANT VISUAL COLOR of the package branding/logo.
+                      - Return EXACTLY ONE of these English strings: "red", "orange", "yellow", "green", "blue", "purple", "pink".
+                      - If unsure or white/black, return null.
 
                     Return ONLY raw JSON with no markdown formatting.`
                 },
@@ -87,7 +91,8 @@ export async function scanMedicationImage(imageBase64: string): Promise<Medicati
             dose_text: result.dose_text || null,
             duration_days: result.duration_days || null,
             frequency: Array.isArray(result.frequency) ? result.frequency : ["08:00"],
-            category: result.category || null
+            category: result.category || null,
+            color: result.color || null
         }
 
     } catch (error: unknown) {
