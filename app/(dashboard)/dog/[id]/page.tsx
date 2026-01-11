@@ -206,6 +206,13 @@ export default function DogDashboardPage() {
         }
 
         const doseKey = `${dose.planId}-${dose.scheduledTime}`
+
+        // Optimistic Haptic Feedback (Android/Mobile)
+        // Note: iOS Safari does NOT support navigator.vibrate at all.
+        if (dose.status !== 'taken' && typeof navigator !== 'undefined' && navigator.vibrate) {
+            try { navigator.vibrate(200); } catch { /* ignore */ }
+        }
+
         setProcessingDoseKey(doseKey) // Start loading on this button
 
         try {
@@ -228,9 +235,6 @@ export default function DogDashboardPage() {
                     notes: 'Marked from dashboard'
                 })
                 if (error) throw error
-
-                // Haptic feedback on success (mobile)
-                if (navigator.vibrate) navigator.vibrate(200)
             }
             // If successful, refresh data to update UI
             await fetchData()
@@ -283,24 +287,40 @@ export default function DogDashboardPage() {
         <div className="space-y-6 max-w-5xl mx-auto">
 
             {/* Date Navigation Header */}
-            <div className="flex items-center justify-between bg-card/50 backdrop-blur-sm p-4 rounded-xl border shadow-sm sticky top-16 z-40 md:static mt-4 md:mt-0 w-full animate-in fade-in slide-in-from-top-4">
-                <Button variant="ghost" size="icon" onClick={() => changeDate(-1)} className="shrink-0">
-                    <ChevronLeft className="h-6 w-6" />
-                </Button>
+            <div className="flex flex-col gap-4 sticky top-16 z-40 md:static mt-4 md:mt-0 animate-in fade-in slide-in-from-top-4">
 
-                <div className="text-center flex-1 min-w-0 px-2">
-                    <h2 className="text-lg font-bold capitalize flex items-center gap-2 justify-center truncate">
-                        <Calendar className="h-4 w-4 text-primary shrink-0" />
-                        <span className="truncate">{formatDateHeader(currentDate)}</span>
-                    </h2>
-                    <p className="text-xs text-muted-foreground truncate">
-                        {currentDate.toLocaleDateString("nb-NO", { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </p>
+                {/* Top Actions Row */}
+                <div className="flex items-center justify-between gap-2">
+                    <HealthLogModal dogId={dogId} />
+
+                    <div className="flex-1" /> {/* Spacer */}
+
+                    {inviteCode && (
+                        <Button variant="ghost" size="sm" onClick={handleInvite} className="bg-background/80 backdrop-blur border shadow-sm">
+                            <UserPlus className="mr-2 h-4 w-4" /> Del tilgang
+                        </Button>
+                    )}
                 </div>
 
-                <Button variant="ghost" size="icon" onClick={() => changeDate(1)} className="shrink-0">
-                    <ChevronRight className="h-6 w-6" />
-                </Button>
+                <div className="flex items-center justify-between bg-card/50 backdrop-blur-sm p-4 rounded-xl border shadow-sm w-full">
+                    <Button variant="ghost" size="icon" onClick={() => changeDate(-1)} className="shrink-0">
+                        <ChevronLeft className="h-6 w-6" />
+                    </Button>
+
+                    <div className="text-center flex-1 min-w-0 px-2">
+                        <h2 className="text-lg font-bold capitalize flex items-center gap-2 justify-center truncate">
+                            <Calendar className="h-4 w-4 text-primary shrink-0" />
+                            <span className="truncate">{formatDateHeader(currentDate)}</span>
+                        </h2>
+                        <p className="text-xs text-muted-foreground truncate">
+                            {currentDate.toLocaleDateString("nb-NO", { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                    </div>
+
+                    <Button variant="ghost" size="icon" onClick={() => changeDate(1)} className="shrink-0">
+                        <ChevronRight className="h-6 w-6" />
+                    </Button>
+                </div>
             </div>
 
             {/* Doses List */}
@@ -324,10 +344,7 @@ export default function DogDashboardPage() {
 
                             return (
                                 <div key={i} className="mb-2">
-                                    <div className={cn(
-                                        "ml-1 mb-1.5 text-sm font-bold flex items-center gap-2",
-                                        isTaken ? "text-muted-foreground/50" : "text-muted-foreground"
-                                    )}>
+                                    <div className="ml-1 mb-1.5 text-sm font-bold flex items-center gap-2">
                                         <Clock className="w-3.5 h-3.5" />
                                         {dose.scheduledTime === "08:00" ? "Morgen (08:00)" : dose.scheduledTime === "20:00" ? "Kveld (20:00)" : dose.scheduledTime}
                                     </div>
@@ -417,11 +434,6 @@ export default function DogDashboardPage() {
             </div>
 
             <div className="pt-8 border-t flex flex-col items-center gap-4">
-                {inviteCode && (
-                    <Button variant="ghost" size="sm" onClick={handleInvite} className="text-muted-foreground">
-                        <UserPlus className="mr-2 h-4 w-4" /> Del tilgang
-                    </Button>
-                )}
                 {!showDeleteConfirm ? (
                     <Button variant="link" className="text-destructive/50 hover:text-destructive text-xs" onClick={() => setShowDeleteConfirm(true)}>
                         Slett hundeprofil
