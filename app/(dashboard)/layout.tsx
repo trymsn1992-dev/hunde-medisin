@@ -41,11 +41,10 @@ export default function DashboardLayout({
         router.push("/login")
     }
 
-    const navItems = dogId ? [
-        { label: "Oversikt", href: `/dog/${dogId}`, icon: LayoutGrid, exact: true },
-        { label: "Medisiner", href: `/dog/${dogId}/medicines`, icon: Pill },
-        { label: "Historikk", href: `/dog/${dogId}/history`, icon: CalendarDays },
-    ] : []
+    { label: "Oversikt", href: `/dog/${dogId}`, icon: LayoutGrid, exact: true },
+    { label: "Historikk", href: `/dog/${dogId}/history`, icon: CalendarDays },
+    { label: "Helse", href: `/dog/${dogId}/health`, icon: Heart },
+    { label: "Medisiner", href: `/dog/${dogId}/medicines`, icon: Pill },
 
     return (
         <div className="min-h-screen flex bg-background">

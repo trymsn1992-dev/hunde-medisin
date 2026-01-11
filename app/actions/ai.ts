@@ -2,36 +2,45 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { OpenAI } from "openai"
+import { startOfWeek, format } from "date-fns"
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 })
 
-export async function generateHealthSummary(dogId: string) {
+export async function getWeeklyHealthSummary(dogId: string) {
     const supabase = await createClient()
 
-    // 1. Fetch Dog Name
-    const { data: dog } = await supabase.from('dogs').select('name').eq('id', dogId).single()
-    const dogName = dog?.name || "Hunden"
+    // Calculate start of current week (Monday)
+    const today = new Date()
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 }) // Monday start
+    const weekStartStr = format(weekStart, 'yyyy-MM-dd')
 
-    // 2. Fetch Last 7 Days of Data
+    // 1. Check Cache
+    const { data: cached } = await supabase
+        .from('health_summaries')
+        .select('summary_text')
+        .eq('dog_id', dogId)
+        .eq('week_start_date', weekStartStr)
+        .single()
+
+    if (cached) {
+        return { success: true, text: cached.summary_text, cached: true }
+    }
+
+    // 2. Fetch Data if no cache
     const endDate = new Date()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - 7)
 
-    // Fetch Dose Logs
+    // Fetch Logs
     const { data: doseLogs } = await supabase
         .from('dose_logs')
-        .select(`
-      taken_at,
-      status,
-      medicine:medicines(name)
-    `)
+        .select(`taken_at, status, medicine:medicines(name)`)
         .eq('dog_id', dogId)
         .gte('taken_at', startDate.toISOString())
         .lte('taken_at', endDate.toISOString())
 
-    // Fetch Health Logs
     const { data: healthLogs } = await supabase
         .from('health_logs')
         .select('*')
@@ -39,52 +48,65 @@ export async function generateHealthSummary(dogId: string) {
         .gte('date', startDate.toISOString().split('T')[0])
         .lte('date', endDate.toISOString().split('T')[0])
 
-    // 3. Format Data for Prompt
+    // Format Data
     const totalDoses = doseLogs?.length || 0
     const missedDoses = doseLogs?.filter(d => d.status === 'missed').length || 0
 
     const healthIssues = healthLogs?.flatMap(h => {
         const issues = []
-        if (h.stool && h.stool !== 'Normal') issues.push(`Stool: ${h.stool} on ${h.date}`)
-        if (h.itch_locations && h.itch_locations.length > 0) issues.push(`Itch: ${h.itch_locations.join(', ')} on ${h.date}`)
-        if (!h.is_playful) issues.push(`Not playful on ${h.date}`)
-        if (!h.wants_walk) issues.push(`No walk desire on ${h.date}`)
-        if (!h.is_hungry) issues.push(`No appetite on ${h.date}`)
-        if (h.notes) issues.push(`Note on ${h.date}: ${h.notes}`)
+        if (h.stool && h.stool !== 'Normal') issues.push(`Avføring: ${h.stool} (${h.date})`)
+        if (h.itch_locations && h.itch_locations.length > 0) issues.push(`Kløe: ${h.itch_locations.join(', ')} (${h.date})`)
+        if (!h.is_playful) issues.push(`Nedsatt energinivå (${h.date})`)
+        if (!h.wants_walk) issues.push(`Ville ikke gå tur (${h.date})`)
+        if (!h.is_hungry) issues.push(`Nedsatt matlyst (${h.date})`)
+        if (h.notes) issues.push(`Notat (${h.date}): ${h.notes}`)
         return issues
     }) || []
 
+    // Direct Prompt
     const prompt = `
-    Analyze the last 7 days of health data for the dog named ${dogName}.
+    Analyze the last 7 days of health data for the dog.
     
     Data:
-    - Total doses given: ${totalDoses}
+    - Total doses: ${totalDoses}
     - Missed doses: ${missedDoses}
-    - Health Logs Count: ${healthLogs?.length || 0}
-    - Reported Issues: ${healthIssues.length > 0 ? healthIssues.join('; ') : "None reported"}
+    - Logs Report: ${healthIssues.length > 0 ? healthIssues.join('; ') : "Ingen registrerte avvik"}
     
     Task:
-    Write a short, friendly, and reassuring summary (max 3-4 sentences) in Norwegian about ${dogName}'s recent health status.
-    - If there are no issues, say everything looks great and they are being well taken care of.
-    - If there are issues (bad stool, itch, missed meds), briefly mention them in a constructive way ("Vær obs på...").
-    - Tone: Veterinary assistant / Caring friend.
-    - Output ONLY the text, no markdown formatting.
+    Provide a clinical, concise weekly summary in Norwegian (Bokmål).
+    - Style: Direct, objective, bullet points permitted but keep it coherent. No "Hei der" or "Voff". No emojis.
+    - Structure:
+      1. Overall Status (1 sentence: Stabil/Improving/Needs Attention)
+      2. Observations (List key issues or "None")
+      3. Action Plan (If issues exist, briefly allow suggestion, otherwise "Continue current regimen")
+    - Keep it short.
   `
 
     try {
         const response = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
-                { role: "system", content: "You are a helpful veterinary assistant app. Speak Norwegian." },
+                { role: "system", content: "You are a veterinary logging assistant. Be direct, concise, and clinical." },
                 { role: "user", content: prompt }
             ],
-            max_tokens: 150,
+            max_tokens: 200,
         })
 
         const text = response.choices[0].message.content
-        return { success: true, text }
+
+        if (text) {
+            // Save to Cache
+            // We use upsert to be safe against race conditions, though unique constraint handles it
+            await supabase.from('health_summaries').upsert({
+                dog_id: dogId,
+                week_start_date: weekStartStr,
+                summary_text: text
+            }, { onConflict: 'dog_id, week_start_date' })
+        }
+
+        return { success: true, text, cached: false }
     } catch (error) {
         console.error("OpenAI Error:", error)
-        return { success: false, error: "Kunne ikke generere helserapport akkurat nå." }
+        return { success: false, error: "Kunne ikke generere rapport." }
     }
 }
