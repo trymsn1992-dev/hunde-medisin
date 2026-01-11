@@ -43,9 +43,8 @@ export default function DashboardLayout({
 
     const navItems = dogId ? [
         { label: "Oversikt", href: `/dog/${dogId}`, icon: LayoutGrid, exact: true },
-        { label: "Historikk", href: `/dog/${dogId}/history`, icon: CalendarDays },
         { label: "Medisiner", href: `/dog/${dogId}/medicines`, icon: Pill },
-        { label: "Helse", href: `/dog/${dogId}/health/log`, icon: Heart },
+        { label: "Historikk", href: `/dog/${dogId}/history`, icon: CalendarDays },
     ] : []
 
     return (
