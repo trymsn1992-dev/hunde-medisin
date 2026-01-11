@@ -55,7 +55,7 @@ export default function DashboardLayout({
                 <aside className="hidden md:flex w-64 flex-col border-r bg-card/50 backdrop-blur-md sticky top-0 h-screen shrink-0">
                     <div className="h-16 flex items-center px-6 border-b">
                         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary transition-opacity hover:opacity-80">
-                            <span>Hundemedisin</span>
+                            <span>hundemedisin</span>
                         </Link>
                     </div>
 
@@ -121,7 +121,7 @@ export default function DashboardLayout({
                 <header className="border-b bg-card/50 backdrop-blur-md sticky top-0 z-50 md:hidden">
                     <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
                         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary shrink-0">
-                            <span>Hundemedisin</span>
+                            <span>hundemedisin</span>
                         </Link>
 
                         <div className="flex items-center gap-2">
