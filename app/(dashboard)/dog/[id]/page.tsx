@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, Clock, CheckCircle, Pill, CalendarDays, Load
 import { cn } from "@/lib/utils"
 import { deleteDog } from "@/app/actions/dogs"
 import { MedicineBadge } from "@/components/medicine-badge"
+import { HealthLogModal } from "@/components/health-log-modal"
 
 type DoseEvent = {
     logId?: string
