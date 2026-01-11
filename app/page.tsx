@@ -48,8 +48,8 @@ export default async function Home() {
             hundemedisin
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
-            Den smarte assistenten for hundens medisinering.
-            <br className="hidden md:inline" /> Koordiner med familien, glem aldri en dose.
+            Den enkleste måten å få kontroll på hundens medisiner.
+            <br className="hidden md:inline" /> Følg med, del ansvar og unngå glemte doser.
           </p>
         </div>
 
