@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Loader2, Camera, Upload, PawPrint, Weight, ArrowLeft } from "lucide-react"
+import { Loader2, Camera, Upload, PawPrint, Weight, ArrowLeft, UserPlus } from "lucide-react"
 import { updateDogProfile } from "@/app/actions/dogs"
 import Link from "next/link"
 
@@ -261,6 +261,31 @@ export default function DogProfilePage() {
                             </div>
                         </form>
                     )}
+                </CardContent>
+            </Card>
+            {/* ACCESS CARD */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Tilgang & deling</CardTitle>
+                    <CardDescription>Inviter andre til å administrere denne hunden.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                            <div className="space-y-1">
+                                <p className="font-medium text-sm">Inviter familiemedlem</p>
+                                <p className="text-xs text-muted-foreground">Del lenken for å gi tilgang.</p>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => {
+                                const url = `${window.location.origin}/join/${dog?.invite_code}`
+                                navigator.clipboard.writeText(url)
+                                alert("Invitasjonslenke kopiert! Send den til de som skal ha tilgang.")
+                            }}>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Kopier lenke
+                            </Button>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
         </div>
