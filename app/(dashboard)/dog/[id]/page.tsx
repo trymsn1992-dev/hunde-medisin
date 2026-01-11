@@ -320,97 +320,93 @@ export default function DogDashboardPage() {
                             const isTaken = dose.status === 'taken'
 
                             return (
-                                <Card key={i} className={cn(
-                                    "transition-all border-l-4 w-full max-w-[368px] mx-auto md:max-w-none",
-                                    isTaken && "opacity-75 border-l-muted-foreground/30 bg-muted/30",
-                                    !isTaken && dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
-                                    !isTaken && dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
-                                    !isTaken && dose.status === 'upcoming' && "border-l-blue-400/50"
-                                )}>
-                                    <div className="flex items-center p-4">
-                                        <div className={cn(
-                                            "w-16 md:w-20 text-center font-bold text-lg",
-                                            isTaken && "text-muted-foreground decoration-line-through",
-                                            !isTaken && dose.status === 'overdue' && "text-red-500",
-                                            !isTaken && dose.status === 'upcoming' && "text-muted-foreground"
-                                        )}>
-                                            {dose.scheduledTime === "08:00" ? "Morgen" : dose.scheduledTime === "20:00" ? "Kveld" : dose.scheduledTime}
-                                        </div>
-
-                                        <div className="flex-1 px-4 min-w-0">
-                                            <div className="mb-1">
-                                                <MedicineBadge
-                                                    medicine={{ id: dose.medicineId, name: dose.medicineName }}
-                                                    className={cn("text-base font-semibold max-w-full", isTaken && "opacity-80")}
-                                                />
+                                <div key={i} className="mb-2">
+                                    <div className={cn(
+                                        "ml-1 mb-1.5 text-sm font-bold flex items-center gap-2",
+                                        isTaken ? "text-muted-foreground/50" : "text-muted-foreground"
+                                    )}>
+                                        <Clock className="w-3.5 h-3.5" />
+                                        {dose.scheduledTime === "08:00" ? "Morgen (08:00)" : dose.scheduledTime === "20:00" ? "Kveld (20:00)" : dose.scheduledTime}
+                                    </div>
+                                    <Card className={cn(
+                                        "transition-all border-l-4 w-full max-w-[368px] md:max-w-none",
+                                        isTaken && "opacity-75 border-l-muted-foreground/30 bg-muted/30",
+                                        !isTaken && dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
+                                        !isTaken && dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
+                                        !isTaken && dose.status === 'upcoming' && "border-l-blue-400/50"
+                                    )}>
+                                        <div className="flex items-center p-4 gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="mb-1.5">
+                                                    <MedicineBadge
+                                                        medicine={{ id: dose.medicineId, name: dose.medicineName }}
+                                                        className={cn("text-base font-semibold max-w-full whitespace-normal break-words h-auto py-1", isTaken && "opacity-80")}
+                                                    />
+                                                </div>
+                                                <p className="text-sm text-muted-foreground truncate">{dose.doseText}</p>
                                             </div>
-                                            <p className="text-sm text-muted-foreground truncate">{dose.doseText}</p>
-                                        </div>
 
-                                        <div>
-                                            {isTaken ? (
-                                                <div className="flex flex-col items-end gap-1">
+                                            <div className="shrink-0">
+                                                {isTaken ? (
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <Button
+                                                            onClick={() => toggleDose(dose)}
+                                                            disabled={isProcessing}
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="min-w-[40px] px-3 font-semibold transition-all shadow-sm bg-emerald-100/10 text-emerald-500 border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
+                                                        >
+                                                            {isProcessing ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <CheckCircle className="h-5 w-5" />
+                                                            )}
+                                                        </Button>
+
+                                                        {dose.takenBy && dose.takenAt && (
+                                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-in fade-in slide-in-from-right-2">
+                                                                {dose.takenBy.avatarUrl ? (
+                                                                    <img
+                                                                        src={dose.takenBy.avatarUrl}
+                                                                        alt={dose.takenBy.name}
+                                                                        className="w-4 h-4 rounded-full border shadow-sm"
+                                                                        title={`Gitt av ${dose.takenBy.name}`}
+                                                                    />
+                                                                ) : (
+                                                                    <div
+                                                                        className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-bold border"
+                                                                        title={`Gitt av ${dose.takenBy.name}`}
+                                                                    >
+                                                                        {dose.takenBy.name?.[0]?.toUpperCase() || "?"}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
                                                     <Button
                                                         onClick={() => toggleDose(dose)}
-                                                        disabled={isProcessing}
+                                                        disabled={isProcessing || !dose.isToday}
                                                         size="sm"
-                                                        variant="outline"
-                                                        className="min-w-[100px] font-semibold transition-all shadow-sm bg-emerald-100/10 text-emerald-500 border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
+                                                        className={cn(
+                                                            "font-semibold transition-all shadow-sm px-4",
+                                                            dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
+                                                            dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white",
+                                                            dose.status === 'upcoming' && "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+                                                            !dose.isToday && "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted"
+                                                        )}
                                                     >
                                                         {isProcessing ? (
                                                             <Loader2 className="h-4 w-4 animate-spin" />
                                                         ) : (
-                                                            <>
-                                                                <CheckCircle className="mr-2 h-4 w-4" /> Gitt
-                                                            </>
+                                                            "Gi dose"
                                                         )}
                                                     </Button>
-
-                                                    {dose.takenBy && dose.takenAt && (
-                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground animate-in fade-in slide-in-from-right-2">
-                                                            <span>
-                                                                {new Date(dose.takenAt).toLocaleTimeString("nb-NO", { hour: '2-digit', minute: '2-digit' })}
-                                                            </span>
-                                                            {dose.takenBy.avatarUrl ? (
-                                                                <img
-                                                                    src={dose.takenBy.avatarUrl}
-                                                                    alt={dose.takenBy.name}
-                                                                    className="w-5 h-5 rounded-full border shadow-sm"
-                                                                    title={`Gitt av ${dose.takenBy.name}`}
-                                                                />
-                                                            ) : (
-                                                                <div
-                                                                    className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold border"
-                                                                    title={`Gitt av ${dose.takenBy.name}`}
-                                                                >
-                                                                    {dose.takenBy.name?.[0]?.toUpperCase() || "?"}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <Button
-                                                    onClick={() => toggleDose(dose)}
-                                                    disabled={isProcessing || !dose.isToday}
-                                                    className={cn(
-                                                        "min-w-[100px] font-semibold transition-all shadow-sm",
-                                                        dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
-                                                        dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white",
-                                                        dose.status === 'upcoming' && "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                                                        !dose.isToday && "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted"
-                                                    )}
-                                                >
-                                                    {isProcessing ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        "Gi dose"
-                                                    )}
-                                                </Button>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                </Card>
+                                    </Card>
+                                </div>
                             )
                         })}
                     </div>

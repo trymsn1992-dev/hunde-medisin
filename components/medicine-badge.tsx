@@ -19,7 +19,7 @@ export function MedicineBadge({ medicine, className, size = 'sm' }: MedicineBadg
     return (
         <span
             className={cn(
-                "inline-flex items-center rounded font-medium text-white shadow-sm bg-opacity-90 px-2 py-0.5 truncate transition-all hover:bg-opacity-100",
+                "inline-flex items-center rounded font-medium text-white shadow-sm bg-opacity-90 px-2 py-0.5 whitespace-normal break-words transition-all hover:bg-opacity-100",
                 colorClass,
                 size === 'sm' && "text-xs",
                 size === 'md' && "text-sm",
