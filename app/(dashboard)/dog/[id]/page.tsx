@@ -228,6 +228,9 @@ export default function DogDashboardPage() {
                     notes: 'Marked from dashboard'
                 })
                 if (error) throw error
+
+                // Haptic feedback on success (mobile)
+                if (navigator.vibrate) navigator.vibrate(200)
             }
             // If successful, refresh data to update UI
             await fetchData()
