@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { deleteMedicine, pauseMedicine, resumeMedicine } from "@/app/actions/medicines"
 import { Plus, ArrowLeft, Trash2, Pause, Play } from "lucide-react"
 import { MedicineBadge } from "@/components/medicine-badge"
+import { EditMedicineModal } from "@/components/edit-medicine-modal"
 
 export default function MedicinesPage() {
     const params = useParams()
@@ -227,6 +228,9 @@ export default function MedicinesPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1">
+                                    {/* EDIT BUTTON */}
+                                    <EditMedicineModal medicine={med} onSuccess={fetchMeds} />
+
                                     {/* PAUSE / RESUME BUTTON */}
                                     {isPaused ? (
                                         <Button

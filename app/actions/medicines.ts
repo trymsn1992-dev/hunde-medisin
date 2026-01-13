@@ -338,5 +338,85 @@ export async function searchCommonMedicines(query: string) {
         return []
     }
 
+
     return data || []
+}
+
+export async function updateMedicine(id: string, data: {
+    name: string
+    strength: string
+    notes: string
+    doseText: string
+    times: string[]
+    color?: string
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    try {
+        // 1. Update Medicine Details
+        const { error: medError } = await supabase
+            .from('medicines')
+            .update({
+                name: data.name,
+                strength: data.strength,
+                notes: data.notes,
+                color: data.color
+            })
+            .eq('id', id)
+
+        if (medError) throw medError
+
+        // 2. Update Active Plan (Assuming we edit the active/latest one)
+        // Find the active plan
+        const { data: plan, error: findError } = await supabase
+            .from('medication_plans')
+            .select('id')
+            .eq('medicine_id', id)
+            .eq('active', true)
+            .single()
+
+        if (plan) {
+            // Update existing active plan
+            const { error: planUpdateError } = await supabase
+                .from('medication_plans')
+                .update({
+                    dose_text: data.doseText,
+                    schedule_times: data.times
+                })
+                .eq('id', plan.id)
+
+            if (planUpdateError) throw planUpdateError
+        } else {
+            // If no active plan, maybe update the latest one regardless of status?
+            // Or just skip. For now, we assume user is editing an active medicine or we only update visuals.
+            // Let's try to update the latest plan if no active one exists (e.g. paused).
+            const { data: latestPlan } = await supabase
+                .from('medication_plans')
+                .select('id')
+                .eq('medicine_id', id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single()
+
+            if (latestPlan) {
+                const { error: planUpdateError } = await supabase
+                    .from('medication_plans')
+                    .update({
+                        dose_text: data.doseText,
+                        schedule_times: data.times
+                    })
+                    .eq('id', latestPlan.id)
+
+                if (planUpdateError) throw planUpdateError
+            }
+        }
+
+        revalidatePath('/', 'layout')
+        return { success: true }
+    } catch (error: any) {
+        console.error("Update Medicine Error:", error)
+        return { success: false, error: error.message || "Failed to update medicine" }
+    }
 }
