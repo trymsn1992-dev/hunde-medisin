@@ -11,6 +11,16 @@ import { cn } from "@/lib/utils"
 import { deleteDog } from "@/app/actions/dogs"
 import { MedicineBadge } from "@/components/medicine-badge"
 import { HealthLogModal } from "@/components/health-log-modal"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 type DoseEvent = {
     logId?: string
@@ -54,7 +64,9 @@ export default function DogDashboardPage() {
     const [doses, setDoses] = useState<DoseEvent[]>([])
 
     // Key to track which dose is currently processing (planId-time)
+    // Key to track which dose is currently processing (planId-time)
     const [processingDoseKey, setProcessingDoseKey] = useState<string | null>(null)
+    const [pendingDose, setPendingDose] = useState<DoseEvent | null>(null)
 
     const supabase = createClient()
     const router = useRouter()
@@ -196,27 +208,16 @@ export default function DogDashboardPage() {
     }, [fetchData])
 
 
-    const toggleDose = async (dose: DoseEvent) => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
 
-        // Restriction: Can only give doses for today
-        if (!dose.isToday && dose.status !== 'taken') {
-            alert("Du kan bare registrere doser for nåværende dato.")
-            return
-        }
-
+    const executeDoseToggle = async (dose: DoseEvent, useScheduledTime = false) => {
         const doseKey = `${dose.planId}-${dose.scheduledTime}`
-
-        // Optimistic Haptic Feedback (Android/Mobile)
-        // Note: iOS Safari does NOT support navigator.vibrate at all.
-        if (dose.status !== 'taken' && typeof navigator !== 'undefined' && navigator.vibrate) {
-            try { navigator.vibrate(200); } catch { /* ignore */ }
-        }
-
-        setProcessingDoseKey(doseKey) // Start loading on this button
+        setProcessingDoseKey(doseKey)
+        setPendingDose(null) // Close dialog if open
 
         try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+
             if (dose.status === 'taken') {
                 // DELETE (Undo)
                 if (dose.logId) {
@@ -225,7 +226,17 @@ export default function DogDashboardPage() {
                 }
             } else {
                 // INSERT (Mark Given)
-                const takenAt = new Date().toISOString()
+                let takenAt = new Date().toISOString()
+
+                // If historical/scheduled time requested
+                if (useScheduledTime) {
+                    // Construct timestamp from currentDate + scheduledTime
+                    const [hours, minutes] = dose.scheduledTime.split(':').map(Number)
+                    const date = new Date(currentDate)
+                    date.setHours(hours, minutes, 0, 0)
+                    takenAt = date.toISOString()
+                }
+
                 const { error } = await supabase.from("dose_logs").insert({
                     plan_id: dose.planId,
                     medicine_id: dose.medicineId,
@@ -233,10 +244,15 @@ export default function DogDashboardPage() {
                     taken_by: user.id,
                     taken_at: takenAt,
                     status: 'taken',
-                    notes: 'Marked from dashboard'
+                    notes: useScheduledTime ? 'Logget tilbake i tid' : 'Markert fra dashboard'
                 })
                 if (error) throw error
             }
+            // Optimistic Haptic Feedback (Android/Mobile)
+            if (dose.status !== 'taken' && typeof navigator !== 'undefined' && navigator.vibrate) {
+                try { navigator.vibrate(200); } catch { /* ignore */ }
+            }
+
             // If successful, refresh data to update UI
             await fetchData()
         } catch (error: unknown) {
@@ -244,8 +260,34 @@ export default function DogDashboardPage() {
             const message = error instanceof Error ? error.message : "Ukjent feil"
             alert("Handling feilet: " + message)
         } finally {
-            setProcessingDoseKey(null) // Stop loading
+            setProcessingDoseKey(null)
         }
+    }
+
+    const toggleDose = async (dose: DoseEvent) => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        // 1. If checking off a past date (not today), ask for confirmation
+        const todayStr = new Date().toLocaleDateString('nb-NO')
+        const currentStr = currentDate.toLocaleDateString('nb-NO')
+
+        // If it's a past date (and not already taken)
+        if (currentDate < new Date() && currentStr !== todayStr && dose.status !== 'taken') {
+            setPendingDose(dose)
+            return
+        }
+
+        // 2. Logic for Today or Future (Future blocked usually)
+        // Restriction: Can only give doses for today (or past via dialog above)
+        if (!dose.isToday && dose.status !== 'taken') {
+            // If we are here, it means it is a future date because past is handled above
+            alert("Du kan ikke loggføre doser frem i tid.")
+            return
+        }
+
+        // Execute immediately for today/undo
+        executeDoseToggle(dose)
     }
 
     const handleDeleteDog = async () => {
@@ -407,14 +449,14 @@ export default function DogDashboardPage() {
                                                 ) : (
                                                     <Button
                                                         onClick={() => toggleDose(dose)}
-                                                        disabled={isProcessing || !dose.isToday}
+                                                        disabled={isProcessing || (!dose.isToday && currentDate > new Date())}
                                                         size="sm"
                                                         className={cn(
                                                             "font-semibold transition-all shadow-sm px-4",
                                                             dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
                                                             dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white",
                                                             dose.status === 'upcoming' && "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                                                            !dose.isToday && "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted"
+                                                            (!dose.isToday && currentDate > new Date()) && "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted" // Only block future
                                                         )}
                                                     >
                                                         {isProcessing ? (
@@ -450,10 +492,30 @@ export default function DogDashboardPage() {
                             <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>Avbryt</Button>
                         </div>
                     </div>
+
                 )}
             </div>
 
-
+            <AlertDialog open={!!pendingDose} onOpenChange={(open) => !open && setPendingDose(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Loggføre tilbake i tid?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Vil du loggføre <strong>{pendingDose?.medicineName}</strong> som gitt på det planlagte tidspunktet?
+                            <br /><br />
+                            Tidspunkt: <strong>{pendingDose?.scheduledTime}</strong>
+                            <br />
+                            Dato: <strong>{currentDate.toLocaleDateString('nb-NO')}</strong>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => pendingDose && executeDoseToggle(pendingDose, true)}>
+                            Ja, loggføre
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
