@@ -36,7 +36,7 @@ import {
 import { getMedicineColor } from "@/lib/medicine-utils"
 import { MedicineBadge } from "@/components/medicine-badge"
 import { getHealthLogs, deleteHealthLog } from "@/app/actions/health"
-import { generateHealthSummary } from "@/app/actions/ai"
+
 
 export default function HistoryPage() {
     const params = useParams()
@@ -61,8 +61,7 @@ export default function HistoryPage() {
     const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set())
     const [entryToDelete, setEntryToDelete] = useState<string | null>(null)
 
-    const [aiSummary, setAiSummary] = useState<string | null>(null)
-    const [aiLoading, setAiLoading] = useState(false)
+
 
     const toggleExpand = (id: string) => {
         setExpandedLogs(prev => {
@@ -139,17 +138,7 @@ export default function HistoryPage() {
         }
     }
 
-    const handleGenerateSummary = async () => {
-        setAiLoading(true)
-        const res = await generateHealthSummary(dogId)
-        if (res.success && res.text) {
-            setAiSummary(res.text)
-            // Save to local storage to avoid re-generating on refresh? Maybe not for now.
-        } else {
-            alert(res.error || "Feil ved generering.")
-        }
-        setAiLoading(false)
-    }
+
 
     // Filter Logs (Doses only, health logs are fundamentally different but could be filtered if we want "Health Only")
     // For now, let's keep Health Logs always visible in "All" or "Calendar" view, but maybe hide in specific medicine filter?
@@ -318,50 +307,7 @@ export default function HistoryPage() {
             {view === 'list' ? (
                 <div className="flex-1 overflow-auto">
 
-                    {/* AI Summary Card */}
-                    <div className="mb-6">
-                        {!aiSummary ? (
-                            <Button
-                                variant="outline"
-                                className="w-full border-dashed border-2 py-8 text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/5 transition-all group"
-                                onClick={handleGenerateSummary}
-                                disabled={aiLoading}
-                            >
-                                {aiLoading ? (
-                                    <div className="flex items-center gap-2">
-                                        <Loader2 className="h-5 w-5 animate-spin" />
-                                        Analyserer data...
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-1">
-                                        <div className="flex items-center gap-2 font-semibold">
-                                            <Sparkles className="h-5 w-5 text-yellow-500 group-hover:scale-110 transition-transform" />
-                                            Generer ukesrapport med AI
-                                        </div>
-                                        <span className="text-xs font-normal opacity-75">Få en oppsummering av helsen siste 7 dager</span>
-                                    </div>
-                                )}
-                            </Button>
-                        ) : (
-                            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-100 dark:border-indigo-900 rounded-xl p-5 relative animate-in fade-in zoom-in-95 duration-300">
-                                <div className="absolute -top-3 -left-3 bg-white dark:bg-zinc-900 border rounded-full p-1.5 shadow-sm">
-                                    <Bot className="h-5 w-5 text-indigo-500" />
-                                </div>
-                                <h3 className="font-bold text-indigo-900 dark:text-indigo-100 mb-2 flex justify-between items-start">
-                                    <span>Ukesoppsummering</span>
-                                    <Button variant="ghost" size="sm" className="h-6 text-xs opacity-50 hover:opacity-100 -mt-1 -mr-2" onClick={() => setAiSummary(null)}>
-                                        Lukk
-                                    </Button>
-                                </h3>
-                                <p className="text-sm leading-relaxed text-indigo-800 dark:text-indigo-200">
-                                    {aiSummary}
-                                </p>
-                                <p className="text-[10px] text-right mt-3 opacity-50 uppercase tracking-widest font-bold">
-                                    Generert av AI
-                                </p>
-                            </div>
-                        )}
-                    </div>
+
 
                     {/* Headers for List View */}
                     {summaryStats && (
