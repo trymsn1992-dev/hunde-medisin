@@ -388,7 +388,7 @@ export default function DogDashboardPage() {
         >
 
             {/* Date Navigation Header */}
-            <div className="flex flex-col gap-4 sticky top-16 z-40 md:static mt-4 md:mt-0 animate-in fade-in slide-in-from-top-4">
+            <div className="flex flex-col gap-4 sticky top-16 z-40 md:static md:mt-0 animate-in fade-in slide-in-from-top-4">
 
                 {/* Top Actions Row */}
                 <div className="flex items-center justify-between gap-2">
