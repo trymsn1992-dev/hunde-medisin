@@ -31,23 +31,24 @@ export default function SubscriptionManager() {
                 return registration.pushManager.getSubscription();
             }).then(async (sub) => {
                 if (sub) {
+                    console.log('Found existing subscription, syncing...');
                     setSubscription(sub);
-                    // Sync with backend on mount to ensure DB is up to date
+                    // Sync with backend on mount
                     try {
                         const res = await fetch('/api/notifications/subscribe', {
                             method: 'POST',
-                            body: JSON.stringify(sub),
+                            body: JSON.stringify(sub.toJSON()),
                             headers: { 'Content-Type': 'application/json' }
                         });
                         if (res.ok) {
                             setIsSubscribed(true);
+                            console.log('Subscription synced successfully');
                         } else {
-                            // If backend fails, browser might be out of sync
                             setIsSubscribed(false);
-                            console.warn('Backend subscription sync failed on mount');
+                            console.warn('Sync failed:', await res.text());
                         }
                     } catch (e) {
-                        console.error('Failed to sync subscription on mount', e);
+                        console.error('Failed to sync on mount', e);
                     }
                 }
             }).catch(err => {
@@ -90,24 +91,32 @@ export default function SubscriptionManager() {
                 userVisibleOnly: true,
                 applicationServerKey: convertedVapidKey
             });
-            console.log('Subscribed successfully');
+            console.log('Browser subscribed successfully');
+
+            const subJSON = sub.toJSON();
+            console.log('Subscription JSON:', subJSON);
 
             setSubscription(sub);
-            setIsSubscribed(true);
 
             // Send subscription to backend
-            await fetch('/api/notifications/subscribe', {
+            const syncRes = await fetch('/api/notifications/subscribe', {
                 method: 'POST',
-                body: JSON.stringify(sub),
+                body: JSON.stringify(subJSON),
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
 
-            alert('Varsler er aktivert!');
-        } catch (error) {
+            if (syncRes.ok) {
+                setIsSubscribed(true);
+                alert('Varsler er aktivert og lagret! Prøv test-knappen nå.');
+            } else {
+                const errorData = await syncRes.json();
+                throw new Error(errorData.error || 'Serveren nektet å lagre varslings-ID.');
+            }
+        } catch (error: any) {
             console.error('Subscription error:', error);
-            alert('Kunne ikke aktivere varsler. Sjekk konsollen eller prøv igjen.');
+            alert('Feil ved aktivering: ' + error.message);
         } finally {
             setLoading(false);
         }
