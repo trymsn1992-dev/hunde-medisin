@@ -391,19 +391,19 @@ export default function DogDashboardPage() {
             <div className="flex flex-col gap-4 sticky top-16 z-40 md:static md:mt-0 animate-in fade-in slide-in-from-top-4">
 
                 {/* Top Actions Row */}
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 pt-2">
                     <HealthLogModal dogId={dogId} />
 
                     <div className="flex-1" /> {/* Spacer */}
 
                     {inviteCode && (
-                        <Button variant="ghost" size="sm" onClick={handleInvite} className="bg-background/80 backdrop-blur border shadow-sm">
+                        <Button variant="ghost" size="sm" onClick={handleInvite} className="bg-background border shadow-sm">
                             <UserPlus className="mr-2 h-4 w-4" /> Del tilgang
                         </Button>
                     )}
                 </div>
 
-                <div className="flex items-center justify-between bg-card/50 backdrop-blur-sm p-4 rounded-xl border shadow-sm w-full">
+                <div className="flex items-center justify-between bg-background p-4 rounded-xl border shadow-sm w-full">
                     <Button variant="ghost" size="icon" onClick={() => changeDate(-1)} className="shrink-0">
                         <ChevronLeft className="h-6 w-6" />
                     </Button>
