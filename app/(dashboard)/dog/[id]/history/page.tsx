@@ -249,9 +249,16 @@ export default function HistoryPage() {
             groups[key].push(log)
         })
 
-        // Sort items WITHIN each day from Early to Late (Ascending)
+        // Sort items WITHIN each day
         Object.keys(groups).forEach(key => {
-            groups[key].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+            groups[key].sort((a, b) => {
+                // 1. Health logs always first
+                if (a.type === 'health' && b.type !== 'health') return -1
+                if (a.type !== 'health' && b.type === 'health') return 1
+
+                // 2. Then sort by time (Early -> Late)
+                return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            })
         })
 
         return groups
