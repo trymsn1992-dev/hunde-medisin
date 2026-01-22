@@ -144,7 +144,7 @@ export default function DogProfilePage() {
                     )}
                 </CardHeader>
                 <CardContent className="pt-6">
-                    {!isEditing && (
+                    {!isEditing ? (
                         // READ-ONLY VIEW
                         <div className="flex flex-col items-center space-y-6">
                             <div className="relative h-32 w-32 rounded-full overflow-hidden border-4 border-background shadow-md bg-muted">
@@ -192,106 +192,106 @@ export default function DogProfilePage() {
                             )}
                         </div>
                     ) : (
-                    // EDIT FORM VIEW
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault()
-                            const formData = new FormData(e.currentTarget)
-                            handleSubmit(formData)
-                        }}
-                        className="space-y-6"
-                    >
+                        // EDIT FORM VIEW
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault()
+                                const formData = new FormData(e.currentTarget)
+                                handleSubmit(formData)
+                            }}
+                            className="space-y-6"
+                        >
 
-                        {/* Image Upload Section */}
-                        <div className="flex flex-col items-center gap-4 p-6 bg-muted/20 rounded-lg border border-dashed">
-                            <div className="relative group cursor-pointer w-32 h-32">
-                                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-background shadow-md bg-muted flex items-center justify-center">
-                                    {previewUrl ? (
-                                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Camera className="h-10 w-10 text-muted-foreground opacity-50" />
-                                    )}
-                                </div>
-                                <label htmlFor="image-upload" className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
-                                    <Upload className="h-6 w-6" />
-                                </label>
-                                <input
-                                    id="image-upload"
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handleImageUpload}
-                                    disabled={uploading}
-                                />
-                            </div>
-                            <div className="text-center">
-                                <p className="text-sm font-medium">Profilbilde</p>
-                                <p className="text-xs text-muted-foreground">Klikk på bildet for å endre</p>
-                            </div>
-                            {/* Hidden input to store URL for the server action */}
-                            <input type="hidden" name="image_url" value={imageUrl} />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Navn</Label>
-                            <Input id="name" name="name" defaultValue={dog?.name} required />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="breed" className="flex items-center gap-2">
-                                    <PawPrint className="h-4 w-4 text-muted-foreground" /> Rase
-                                </Label>
-                                <Input id="breed" name="breed" defaultValue={dog?.breed || ""} placeholder="Eks. Labrador" />
-                            </div>
-                            <div className="space-y-2">
-                                <Input id="weight" name="weight" defaultValue={dog?.weight || ""} placeholder="Eks. 25 kg" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-4 pt-4 border-t">
-                            <h3 className="font-medium text-sm">Varslinger</h3>
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center space-x-2">
+                            {/* Image Upload Section */}
+                            <div className="flex flex-col items-center gap-4 p-6 bg-muted/20 rounded-lg border border-dashed">
+                                <div className="relative group cursor-pointer w-32 h-32">
+                                    <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-background shadow-md bg-muted flex items-center justify-center">
+                                        {previewUrl ? (
+                                            <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Camera className="h-10 w-10 text-muted-foreground opacity-50" />
+                                        )}
+                                    </div>
+                                    <label htmlFor="image-upload" className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
+                                        <Upload className="h-6 w-6" />
+                                    </label>
                                     <input
-                                        type="checkbox"
-                                        id="missed_meds_alert_enabled"
-                                        name="missed_meds_alert_enabled"
-                                        className="h-4 w-4"
-                                        defaultChecked={dog?.missed_meds_alert_enabled}
+                                        id="image-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleImageUpload}
+                                        disabled={uploading}
                                     />
-                                    <Label htmlFor="missed_meds_alert_enabled">Varsle meg hvis jeg glemmer medisin</Label>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-medium">Profilbilde</p>
+                                    <p className="text-xs text-muted-foreground">Klikk på bildet for å endre</p>
+                                </div>
+                                {/* Hidden input to store URL for the server action */}
+                                <input type="hidden" name="image_url" value={imageUrl} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Navn</Label>
+                                <Input id="name" name="name" defaultValue={dog?.name} required />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="breed" className="flex items-center gap-2">
+                                        <PawPrint className="h-4 w-4 text-muted-foreground" /> Rase
+                                    </Label>
+                                    <Input id="breed" name="breed" defaultValue={dog?.breed || ""} placeholder="Eks. Labrador" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="missed_meds_delay_minutes">Ventetid før varsel (minutter)</Label>
-                                    <Input
-                                        id="missed_meds_delay_minutes"
-                                        name="missed_meds_delay_minutes"
-                                        type="number"
-                                        defaultValue={dog?.missed_meds_delay_minutes || 120}
-                                        min="15"
-                                    />
-                                    <p className="text-xs text-muted-foreground">Standard er 120 minutter (2 timer).</p>
+                                    <Input id="weight" name="weight" defaultValue={dog?.weight || ""} placeholder="Eks. 25 kg" />
                                 </div>
                             </div>
-                        </div>
 
-                        {error && (
-                            <div className="p-3 bg-red-50 text-red-800 rounded-md text-sm">
-                                {error}
+                            <div className="space-y-4 pt-4 border-t">
+                                <h3 className="font-medium text-sm">Varslinger</h3>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            id="missed_meds_alert_enabled"
+                                            name="missed_meds_alert_enabled"
+                                            className="h-4 w-4"
+                                            defaultChecked={dog?.missed_meds_alert_enabled}
+                                        />
+                                        <Label htmlFor="missed_meds_alert_enabled">Varsle meg hvis jeg glemmer medisin</Label>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="missed_meds_delay_minutes">Ventetid før varsel (minutter)</Label>
+                                        <Input
+                                            id="missed_meds_delay_minutes"
+                                            name="missed_meds_delay_minutes"
+                                            type="number"
+                                            defaultValue={dog?.missed_meds_delay_minutes || 120}
+                                            min="15"
+                                        />
+                                        <p className="text-xs text-muted-foreground">Standard er 120 minutter (2 timer).</p>
+                                    </div>
+                                </div>
                             </div>
-                        )}
 
-                        <div className="flex justify-end gap-3 pt-4 border-t">
-                            <Button type="button" variant="ghost" onClick={() => setIsEditing(false)} disabled={uploading || saving}>
-                                Avbryt
-                            </Button>
-                            <Button type="submit" disabled={uploading || saving}>
-                                {saving ? <Loader2 className="animate-spin mr-2" /> : null}
-                                Lagre endringer
-                            </Button>
-                        </div>
-                    </form>
+                            {error && (
+                                <div className="p-3 bg-red-50 text-red-800 rounded-md text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-3 pt-4 border-t">
+                                <Button type="button" variant="ghost" onClick={() => setIsEditing(false)} disabled={uploading || saving}>
+                                    Avbryt
+                                </Button>
+                                <Button type="submit" disabled={uploading || saving}>
+                                    {saving ? <Loader2 className="animate-spin mr-2" /> : null}
+                                    Lagre endringer
+                                </Button>
+                            </div>
+                        </form>
                     )}
                 </CardContent>
             </Card>

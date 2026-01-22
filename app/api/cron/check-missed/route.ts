@@ -5,11 +5,14 @@ import { toZonedTime, format } from 'date-fns-tz';
 import { addMinutes, parse, isBefore, startOfDay, endOfDay } from 'date-fns';
 
 // Configure Web Push
-webPush.setVapidDetails(
-    process.env.NEXT_PUBLIC_VAPID_SUBJECT || 'mailto:admin@example.com',
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!
-);
+// Configure Web Push
+if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webPush.setVapidDetails(
+        process.env.NEXT_PUBLIC_VAPID_SUBJECT || 'mailto:admin@example.com',
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+}
 
 const TIMEZONE = 'Europe/Oslo'; // Assuming target audience for V1
 

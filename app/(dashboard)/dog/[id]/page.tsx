@@ -369,13 +369,13 @@ export default function DogDashboardPage() {
             x: 0,
             opacity: 1,
             scale: 1,
-            transition: { duration: 0.3, ease: "easeOut" } // Slower duration
+            transition: { duration: 0.3, ease: "easeOut" as const } // Slower duration
         },
         exit: (direction: number) => ({
             x: direction > 0 ? -100 : 100, // Increased distance
             opacity: 0,
             scale: 0.95,
-            transition: { duration: 0.2, ease: "easeIn" }
+            transition: { duration: 0.2, ease: "easeIn" as const }
         })
     }
 
