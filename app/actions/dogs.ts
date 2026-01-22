@@ -84,7 +84,7 @@ export async function updateDogProfile(dogId: string, prevState: any, formData: 
                 breed: breed || null,
                 weight: weight || null,
                 image_url: imageUrl || null,
-                missed_meds_alert_enabled: formData.get("missed_meds_alert_enabled") === 'on',
+                missed_meds_alert_enabled: formData.has("missed_meds_alert_enabled"),
                 missed_meds_delay_minutes: parseInt(formData.get("missed_meds_delay_minutes") as string) || 120
             })
             .eq("id", dogId)

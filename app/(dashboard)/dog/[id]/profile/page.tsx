@@ -99,10 +99,10 @@ export default function DogProfilePage() {
                 if (result.success) {
                     setSuccess(result.message)
                     setIsEditing(false)
-                    // Refresh dog data locally to reflect changes immediately in UI
-                    const { data } = await supabase.from("dogs").select("*").eq("id", dogId).single()
-                    if (data) setDog(data)
-                    router.refresh() // Refresh server components (header)
+                    // RE-FETCH data immediately
+                    const { data: updatedDog } = await supabase.from("dogs").select("*").eq("id", dogId).single()
+                    if (updatedDog) setDog(updatedDog)
+                    router.refresh()
                 } else {
                     setError(result.message)
                 }
