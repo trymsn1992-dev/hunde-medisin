@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Loader2, Camera, Upload, PawPrint, Weight, ArrowLeft, UserPlus } from "lucide-react"
-import { updateDogProfile } from "@/app/actions/dogs"
+import { updateDogProfile, updateMemberSettings } from "@/app/actions/dogs"
 import Link from "next/link"
 import SubscriptionManager from "@/components/pwa/SubscriptionManager"
 
