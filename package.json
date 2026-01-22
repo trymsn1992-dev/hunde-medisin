@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "dotenv": "^17.2.3",
     "framer-motion": "^12.24.7",
     "lucide-react": "^0.562.0",
@@ -32,7 +33,8 @@
     "react-dom": "19.2.3",
     "react-webcam": "^7.2.0",
     "tailwind-merge": "^3.4.0",
-    "tesseract.js": "^7.0.0"
+    "tesseract.js": "^7.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
@@ -40,6 +42,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",

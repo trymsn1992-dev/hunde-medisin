@@ -1,0 +1,109 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - link "hundemedisin" [ref=e5] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=e6]: hundemedisin
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e10]: F
+          - generic [ref=e11]:
+            - paragraph [ref=e12]: Fido
+            - link "Rediger profil" [ref=e13] [cursor=pointer]:
+              - /url: /dog/c5b3e8e5-3047-43a4-ab82-bb131a36dcd1/profile
+        - navigation [ref=e14]:
+          - link "Gå til Oversikt" [ref=e15] [cursor=pointer]:
+            - /url: /dog/c5b3e8e5-3047-43a4-ab82-bb131a36dcd1
+            - img [ref=e16]
+            - text: Oversikt
+          - link "Gå til Historikk" [active] [ref=e21] [cursor=pointer]:
+            - /url: /dog/c5b3e8e5-3047-43a4-ab82-bb131a36dcd1/history
+            - img [ref=e22]
+            - text: Historikk
+          - link "Gå til Helse" [ref=e24] [cursor=pointer]:
+            - /url: /dog/c5b3e8e5-3047-43a4-ab82-bb131a36dcd1/health
+            - img [ref=e25]
+            - text: Helse
+          - link "Gå til Medisiner" [ref=e27] [cursor=pointer]:
+            - /url: /dog/c5b3e8e5-3047-43a4-ab82-bb131a36dcd1/medicines
+            - img [ref=e28]
+            - text: Medisiner
+      - button "Logg ut" [ref=e32]:
+        - img [ref=e33]
+        - text: Logg ut
+    - main [ref=e37]:
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - button "Logg helse" [ref=e41]:
+              - img [ref=e42]
+              - text: Logg helse
+            - button "Del tilgang" [ref=e44]:
+              - img [ref=e45]
+              - text: Del tilgang
+          - generic [ref=e48]:
+            - button [ref=e49]:
+              - img [ref=e50]
+            - generic [ref=e52]:
+              - heading "I dag" [level=2] [ref=e53]:
+                - img [ref=e54]
+                - generic [ref=e56]: I dag
+              - paragraph [ref=e57]: 22. januar 2026
+            - button [ref=e58]:
+              - img [ref=e59]
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - generic [ref=e64]:
+              - img [ref=e65]
+              - text: Kveld (20:00)
+            - generic [ref=e69]:
+              - generic [ref=e70]:
+                - generic "Rimadyl" [ref=e72]
+                - paragraph [ref=e73]: 1 tablett
+              - generic [ref=e75]:
+                - button [ref=e76]:
+                  - img [ref=e77]
+                - generic "Gitt av Test Person" [ref=e81]: T
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - img [ref=e84]
+              - text: Kveld (20:00)
+            - generic [ref=e88]:
+              - generic [ref=e89]:
+                - generic "Rimadyl" [ref=e91]
+                - paragraph [ref=e92]: 1 tablett
+              - generic [ref=e94]:
+                - button [ref=e95]:
+                  - img [ref=e96]
+                - generic "Gitt av Test Person" [ref=e100]: T
+          - generic [ref=e101]:
+            - generic [ref=e102]:
+              - img [ref=e103]
+              - text: Kveld (20:00)
+            - generic [ref=e107]:
+              - generic [ref=e108]:
+                - generic "Rimadyl" [ref=e110]
+                - paragraph [ref=e111]: 1 tablett
+              - generic [ref=e113]:
+                - button [ref=e114]:
+                  - img [ref=e115]
+                - generic "Gitt av Test Person" [ref=e119]: T
+        - button "Slett hundeprofil" [ref=e121]
+  - button "Open Next.js Dev Tools" [ref=e127] [cursor=pointer]:
+    - img [ref=e128]
+  - alert [ref=e131]
+  - generic [ref=e133]:
+    - generic [ref=e134]:
+      - img [ref=e136]
+      - paragraph [ref=e138]:
+        - text: Vi bruker informasjonskapsler for å gi deg en bedre opplevelse og holde deg innlogget. Ved å trykke "Godta alle" samtykker du til dette. Les mer i vår
+        - link "personvernerklæring" [ref=e139] [cursor=pointer]:
+          - /url: /personvern
+        - text: .
+    - generic [ref=e140]:
+      - button "Kun nødvendige" [ref=e141]
+      - button "Godta alle" [ref=e142]
+```
