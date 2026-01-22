@@ -27,6 +27,7 @@ export default function DogProfilePage() {
     const [isEditing, setIsEditing] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [testingPush, setTestingPush] = useState(false)
 
     useEffect(() => {
         const fetchDog = async () => {
@@ -112,6 +113,24 @@ export default function DogProfilePage() {
             setError("Noe gikk galt under lagring.")
         } finally {
             setSaving(false)
+        }
+    }
+
+    const sendTestNotification = async () => {
+        setTestingPush(true);
+        try {
+            const res = await fetch('/api/notifications/test', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                alert('Test-varsel sendt!');
+            } else {
+                alert('Feil: ' + (data.error || 'Kunne ikke sende varsel'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Noe gikk galt.');
+        } finally {
+            setTestingPush(false);
         }
     }
 
@@ -327,8 +346,17 @@ export default function DogProfilePage() {
                     <CardTitle>Dine varslinger</CardTitle>
                     <CardDescription>Administrer varslinger på denne enheten.</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                     <SubscriptionManager />
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={sendTestNotification}
+                        disabled={testingPush}
+                    >
+                        {testingPush ? <Loader2 className="animate-spin mr-2" /> : null}
+                        Send test-varsel til min telefon
+                    </Button>
                 </CardContent>
             </Card>
         </div>
