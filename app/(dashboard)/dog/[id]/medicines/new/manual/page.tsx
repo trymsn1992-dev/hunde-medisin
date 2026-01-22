@@ -303,16 +303,18 @@ export default function ManualEntryPage() {
 
                             <div className="flex flex-wrap gap-2">
                                 {["07:00", "08:00", "09:00", "12:00", "17:00", "18:00", "20:00", "22:00"].map(t => (
-                                    <div
+                                    <button
                                         key={t}
+                                        type="button"
                                         onClick={() => toggleTime(t)}
+                                        aria-pressed={times.includes(t)}
                                         className={cn(
-                                            "px-3 py-2 rounded-md border cursor-pointer transition-colors text-sm font-medium",
-                                            times.includes(t) ? "bg-primary text-primary-foreground border-primary" : "hover:bg-accent"
+                                            "px-3 py-2 rounded-md border cursor-pointer transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                                            times.includes(t) ? "bg-primary text-primary-foreground border-primary" : "hover:bg-accent bg-background"
                                         )}
                                     >
                                         {t}
-                                    </div>
+                                    </button>
                                 ))}
                             </div>
                             {times.length === 0 && <p className="text-destructive text-sm">Velg minst ett tidspunkt.</p>}

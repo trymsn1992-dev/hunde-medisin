@@ -91,6 +91,7 @@ export default function DashboardLayout({
                                     <Link
                                         key={item.href}
                                         href={item.href}
+                                        aria-label={`Gå til ${item.label}`}
                                         className={cn(
                                             "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all",
                                             isActive

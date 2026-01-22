@@ -39,12 +39,24 @@ export default function MedicinesPage() {
             `)
             .eq('dog_id', dogId)
 
-        // Transform to attach "currentPlan" convenience
+        // Transform to attach "currentPlan" convenience AND calculate sort key
         const mapped = data?.map(m => {
             // Find latest created plan
-            const latestPlan = m.plans?.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
-            return { ...m, currentPlan: latestPlan }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const sortedPlans = m.plans?.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) || []
+            const latestPlan = sortedPlans[0]
+
+            // Calculate Last Modified (Medicine Created or Latest Plan Created)
+            const medCreated = new Date(m.created_at).getTime()
+            const planCreated = latestPlan ? new Date(latestPlan.created_at).getTime() : 0
+            const lastModified = Math.max(medCreated, planCreated)
+
+            return { ...m, currentPlan: latestPlan, lastModified }
         }) || []
+
+        // SORT by Last Modified (Desc)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mapped.sort((a: any, b: any) => b.lastModified - a.lastModified)
 
         setMedicines(mapped)
         router.refresh()

@@ -68,6 +68,36 @@ export default function DogDashboardPage() {
     const [processingDoseKey, setProcessingDoseKey] = useState<string | null>(null)
     const [pendingDose, setPendingDose] = useState<DoseEvent | null>(null)
 
+    // Swipe State
+    const [touchStart, setTouchStart] = useState<number | null>(null)
+    const [touchEnd, setTouchEnd] = useState<number | null>(null)
+
+    // Minimum swipe distance (in px) 
+    const minSwipeDistance = 50
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null) // Reset
+        setTouchStart(e.targetTouches[0].clientX)
+    }
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX)
+    }
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return
+        const distance = touchStart - touchEnd
+        const isLeftSwipe = distance > minSwipeDistance
+        const isRightSwipe = distance < -minSwipeDistance
+
+        if (isLeftSwipe) {
+            changeDate(1) // Next day
+        }
+        if (isRightSwipe) {
+            changeDate(-1) // Prev day
+        }
+    }
+
     const supabase = createClient()
     const router = useRouter()
 
@@ -327,7 +357,12 @@ export default function DogDashboardPage() {
     }
 
     return (
-        <div className="space-y-6 max-w-5xl mx-auto">
+        <div
+            className="space-y-6 max-w-5xl mx-auto min-h-[50vh]"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
 
             {/* Date Navigation Header */}
             <div className="flex flex-col gap-4 sticky top-16 z-40 md:static mt-4 md:mt-0 animate-in fade-in slide-in-from-top-4">

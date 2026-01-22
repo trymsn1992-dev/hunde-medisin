@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Calendar as CalendarIcon, List as ListIcon, ChevronLeft, ChevronRight, Activity, Heart, AlertCircle, Trash2, Sparkles, Bot, Loader2 } from "lucide-react"
+import { ArrowLeft, Calendar as CalendarIcon, List as ListIcon, ChevronLeft, ChevronRight, Activity, Heart, AlertCircle, Trash2, Sparkles, Bot, Loader2, Pill } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
     AlertDialog,
@@ -80,7 +80,16 @@ export default function HistoryPage() {
             // 1. Medicines
             const { data: medData } = await supabase
                 .from('medicines')
-                .select('id, name')
+                .select(`
+                    id, 
+                    name,
+                    plans:medication_plans(
+                        start_date,
+                        end_date,
+                        active,
+                        created_at
+                    )
+                `)
                 .eq('dog_id', dogId)
                 .order('name')
             setMedicines(medData || [])
@@ -152,24 +161,48 @@ export default function HistoryPage() {
     // --- Stats Logic (Dose Only) ---
     const summaryStats = useMemo(() => {
         if (selectedMedicine === 'all' || filteredDoseLogs.length === 0) return null
-        const takenLogs = filteredDoseLogs.filter(l => l.status === 'taken')
-        if (takenLogs.length === 0) return null
-        const sorted = [...takenLogs].sort((a, b) => new Date(a.taken_at).getTime() - new Date(b.taken_at).getTime())
-        const firstDate = new Date(sorted[0].taken_at)
-        const daysDiff = differenceInCalendarDays(new Date(), firstDate) || 1
-        const count = takenLogs.length
-        const perDay = count / daysDiff
 
-        let freqText = `ca. ${perDay.toFixed(1)} ganger daglig`
-        if (Math.abs(perDay - 1) < 0.2) freqText = "én gang daglig"
-        else if (Math.abs(perDay - 2) < 0.2) freqText = "to ganger daglig"
-        else if (perDay < 0.5) freqText = "sjeldnere enn daglig"
+        // Existing Frequency Logic
+        const takenLogs = filteredDoseLogs.filter(l => l.status === 'taken')
+        const count = takenLogs.length
+
+        let freqText = ""
+        if (count > 0) {
+            const sorted = [...takenLogs].sort((a, b) => new Date(a.taken_at).getTime() - new Date(b.taken_at).getTime())
+            const firstDate = new Date(sorted[0].taken_at)
+            const daysDiff = differenceInCalendarDays(new Date(), firstDate) || 1
+            const perDay = count / daysDiff
+
+            let freqLabel = `ca. ${perDay.toFixed(1)} / dag`
+            if (Math.abs(perDay - 1) < 0.2) freqLabel = "1 gang daglig"
+            else if (Math.abs(perDay - 2) < 0.2) freqLabel = "2 ganger daglig"
+
+            freqText = `${freqLabel} (Totalt ${count})`
+        }
+
+        // Plan Details
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const med = medicines.find((m: any) => m.id === selectedMedicine)
+        let planInfo = null
+        if (med && med.plans && med.plans.length > 0) {
+            // Find earliest start and latest end
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const sortedPlans = [...med.plans].sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+            const firstPlan = sortedPlans[0]
+            const lastPlan = sortedPlans[sortedPlans.length - 1]
+
+            const startDate = new Date(firstPlan.start_date).toLocaleDateString('nb-NO')
+            const endDate = lastPlan.end_date ? new Date(lastPlan.end_date).toLocaleDateString('nb-NO') : "Løpende"
+
+            planInfo = { startDate, endDate, isActive: lastPlan.active }
+        }
 
         return {
-            text: `Gitt ${freqText} siden ${firstDate.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short', year: 'numeric' })}`,
-            count
+            freqText,
+            count,
+            planInfo
         }
-    }, [filteredDoseLogs, selectedMedicine])
+    }, [filteredDoseLogs, selectedMedicine, medicines])
 
     // --- List View Grouping (Mix Doses and Health) ---
     const combinedListLogs = useMemo(() => {
@@ -215,6 +248,12 @@ export default function HistoryPage() {
             if (!groups[key]) groups[key] = []
             groups[key].push(log)
         })
+
+        // Sort items WITHIN each day from Early to Late (Ascending)
+        Object.keys(groups).forEach(key => {
+            groups[key].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+        })
+
         return groups
     }, [combinedListLogs])
 
@@ -311,19 +350,46 @@ export default function HistoryPage() {
 
                     {/* Headers for List View */}
                     {summaryStats && (
-                        <div className="bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-green-900 dark:text-green-100 mb-6 shrink-0">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-green-200 dark:bg-green-700 flex items-center justify-center shrink-0">
-                                    <CalendarIcon className="h-5 w-5 text-green-700 dark:text-white" />
+                        <div className="bg-green-50/50 border border-green-200 dark:bg-green-900/10 dark:border-green-800 rounded-xl p-5 flex flex-col md:flex-row gap-6 text-foreground mb-6 shrink-0 shadow-sm">
+
+                            {/* Left: Med Info */}
+                            <div className="flex items-start gap-4 flex-1">
+                                <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center shrink-0 border border-green-200 dark:border-green-700">
+                                    <Pill className="h-6 w-6 text-green-700 dark:text-green-300" />
                                 </div>
+                                <div className="space-y-1">
+                                    <h2 className="font-bold text-xl">{medicines.find(m => m.id === selectedMedicine)?.name}</h2>
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
+                                        {summaryStats.planInfo && (
+                                            <>
+                                                <span className="text-muted-foreground">Startet: <span className="text-foreground">{summaryStats.planInfo.startDate}</span></span>
+                                                <span className="text-muted-foreground">Slutt: <span className="text-foreground">{summaryStats.planInfo.endDate}</span></span>
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {summaryStats.planInfo?.isActive ? (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">
+                                                Aktiv
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800">
+                                                Avsluttet/Pauset
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Stats */}
+                            <div className="flex items-center gap-4 border-t md:border-t-0 md:border-l border-green-200 dark:border-green-800/50 pt-4 md:pt-0 md:pl-6">
                                 <div>
-                                    <p className="font-semibold text-lg">{medicines.find(m => m.id === selectedMedicine)?.name}</p>
-                                    <p className="opacity-90">{summaryStats.text}</p>
+                                    <p className="text-sm text-muted-foreground mb-0.5">Totalt gitt</p>
+                                    <p className="text-2xl font-bold">{summaryStats.count} doser</p>
+                                    <p className="text-xs text-muted-foreground font-medium">{summaryStats.freqText.split('(')[0]}</p>
                                 </div>
                             </div>
-                            <div className="hidden sm:block text-2xl font-bold opacity-50 px-4">
-                                {summaryStats.count} doser
-                            </div>
+
                         </div>
                     )}
 
@@ -603,6 +669,11 @@ export default function HistoryPage() {
                                                                 <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
                                                                     Avføring: {h.stool || "Ikke registrert"}
                                                                 </span>
+                                                                {h.cone_usage && h.cone_usage !== "Ingen" && (
+                                                                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                                                        Skjerm: {h.cone_usage}
+                                                                    </span>
+                                                                )}
                                                                 {h.itch_locations && h.itch_locations.length > 0 && (
                                                                     <div className="w-full bg-red-100 text-red-700 px-2 py-0.5 rounded mt-1">
                                                                         Kløe: {h.itch_locations.join(", ")}
@@ -615,6 +686,12 @@ export default function HistoryPage() {
                                                                 {!h.wants_walk && <div className="p-1 px-2 rounded bg-red-100 text-red-700">Vil ikke gå tur</div>}
                                                                 {!h.is_hungry && <div className="p-1 px-2 rounded bg-red-100 text-red-700">Dårlig matlyst</div>}
                                                                 {!h.is_thirsty && <div className="p-1 px-2 rounded bg-red-100 text-red-700">Ikke tørst</div>}
+
+                                                                {h.cone_usage && h.cone_usage !== 'Ingen' && (
+                                                                    <div className="col-span-2 p-1 px-2 rounded bg-blue-50 text-blue-800 border border-blue-100 w-full">
+                                                                        Skjerm: <strong>{h.cone_usage}</strong>
+                                                                    </div>
+                                                                )}
 
                                                                 {h.stool && h.stool !== 'Normal' && (
                                                                     <div className="col-span-2 p-1 px-2 rounded bg-amber-50 text-amber-800 border border-amber-100 w-full">

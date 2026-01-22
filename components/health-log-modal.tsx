@@ -35,6 +35,7 @@ export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalPro
     const [isThirsty, setIsThirsty] = useState<boolean>(true)
 
     const [stool, setStool] = useState<string | null>(null)
+    const [coneUsage, setConeUsage] = useState<string>("Ingen")
     const [itchSeverity, setItchSeverity] = useState<Record<string, number>>({})
     const [notes, setNotes] = useState("")
 
@@ -88,6 +89,7 @@ export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalPro
                 isHungry,
                 isThirsty,
                 stool,
+                coneUsage, // Added
                 itchLocations,
                 notes
             })
@@ -182,6 +184,29 @@ export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalPro
                             bgColor="bg-blue-500/10"
                             activeBg="bg-blue-500"
                         />
+                    </div>
+
+                    {/* Cone Usage (Skjerm) */}
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-medium flex items-center gap-2">
+                            🛡️ Skjerm / Krage
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                            {["Ingen", "Litt", "Mye"].map(level => (
+                                <button
+                                    key={level}
+                                    onClick={() => setConeUsage(level)}
+                                    className={cn(
+                                        "px-4 py-2 rounded-full text-sm font-medium transition-all border",
+                                        coneUsage === level
+                                            ? "bg-blue-600 text-white border-blue-600 shadow-md transform scale-105"
+                                            : "bg-background hover:bg-muted text-foreground border-input"
+                                    )}
+                                >
+                                    {level}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Stool */}

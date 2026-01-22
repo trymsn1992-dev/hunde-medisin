@@ -11,6 +11,7 @@ export async function createHealthLog(data: {
     isHungry: boolean
     isThirsty: boolean
     stool: string | null
+    coneUsage: string
     itchLocations: string[]
     notes: string
 }) {
@@ -35,6 +36,7 @@ export async function createHealthLog(data: {
                 is_hungry: data.isHungry,
                 is_thirsty: data.isThirsty,
                 stool: data.stool,
+                cone_usage: data.coneUsage,
                 itch_locations: data.itchLocations,
                 notes: data.notes
             })
