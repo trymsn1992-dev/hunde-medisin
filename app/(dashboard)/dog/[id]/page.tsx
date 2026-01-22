@@ -396,17 +396,17 @@ export default function DogDashboardPage() {
 
     return (
         <div
-            className="space-y-6 max-w-5xl mx-auto min-h-[50vh] overflow-hidden"
+            className="max-w-5xl mx-auto min-h-[50vh] overflow-hidden"
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
         >
 
             {/* Date Navigation Header */}
-            <div className="flex flex-col gap-4 sticky top-16 z-40 md:static md:mt-0 animate-in fade-in slide-in-from-top-4">
+            <div className="flex flex-col gap-2 sticky top-16 z-40 md:static md:mt-0 animate-in fade-in slide-in-from-top-4 bg-background pb-2">
 
                 {/* Top Actions Row */}
-                <div className="flex items-center justify-between gap-2 pt-2">
+                <div className="flex items-center justify-between gap-2 py-2">
                     <HealthLogModal dogId={dogId} />
 
                     <div className="flex-1" /> {/* Spacer */}
