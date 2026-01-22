@@ -32,10 +32,11 @@ export async function POST(req: NextRequest) {
         });
 
         if (error) {
-            console.error('Error saving subscription:', error);
-            return NextResponse.json({ error: 'Database error' }, { status: 500 });
+            console.error('STRICT ERROR saving subscription to Supabase:', error);
+            return NextResponse.json({ error: 'Database-feil: ' + error.message }, { status: 500 });
         }
 
+        console.log('New subscription saved successfully for user:', user.id);
         return NextResponse.json({ message: 'Subscribed successfully' });
     } catch (err) {
         console.error('Error in subscribe route:', err);

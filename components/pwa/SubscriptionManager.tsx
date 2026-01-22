@@ -27,12 +27,28 @@ export default function SubscriptionManager() {
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
             // 1. Register Service Worker explicitly
             navigator.serviceWorker.register('/sw.js').then(registration => {
-                console.log('SW Registered', registration);
+                console.log('SW Registered');
                 return registration.pushManager.getSubscription();
-            }).then(sub => {
+            }).then(async (sub) => {
                 if (sub) {
                     setSubscription(sub);
-                    setIsSubscribed(true);
+                    // Sync with backend on mount to ensure DB is up to date
+                    try {
+                        const res = await fetch('/api/notifications/subscribe', {
+                            method: 'POST',
+                            body: JSON.stringify(sub),
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        if (res.ok) {
+                            setIsSubscribed(true);
+                        } else {
+                            // If backend fails, browser might be out of sync
+                            setIsSubscribed(false);
+                            console.warn('Backend subscription sync failed on mount');
+                        }
+                    } catch (e) {
+                        console.error('Failed to sync subscription on mount', e);
+                    }
                 }
             }).catch(err => {
                 console.error('SW registration failed', err);
