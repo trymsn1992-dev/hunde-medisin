@@ -21,33 +21,52 @@ export default function SubscriptionManager() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [subscription, setSubscription] = useState<PushSubscription | null>(null);
     const [permission, setPermission] = useState<NotificationPermission | 'default'>('default');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
-            // 1. Register Service Worker
-            navigator.serviceWorker.ready.then(registration => {
-                registration.pushManager.getSubscription().then(sub => {
-                    if (sub) {
-                        setSubscription(sub);
-                        setIsSubscribed(true);
-                    }
-                });
+            // 1. Register Service Worker explicitly
+            navigator.serviceWorker.register('/sw.js').then(registration => {
+                console.log('SW Registered', registration);
+                return registration.pushManager.getSubscription();
+            }).then(sub => {
+                if (sub) {
+                    setSubscription(sub);
+                    setIsSubscribed(true);
+                }
+            }).catch(err => {
+                console.error('SW registration failed', err);
             });
             setPermission(Notification.permission);
         }
     }, []);
 
     const subscribeUser = async () => {
+        setLoading(true);
         try {
-            if (permission === 'denied') {
+            console.log('Starting subscription process...');
+
+            // Explicitly request permission (important for iOS)
+            const result = await Notification.requestPermission();
+            setPermission(result);
+
+            if (result === 'denied') {
                 alert('Du har blokkert varsler. Endre dette i nettleserinnstillingene.');
                 return;
             }
 
+            if (result !== 'granted') {
+                console.log('Permission not granted:', result);
+                return;
+            }
+
+            // Get registration
             const registration = await navigator.serviceWorker.ready;
+            console.log('SW ready');
 
             const response = await fetch('/api/notifications/vapid-public-key');
             const { publicKey } = await response.json();
+            console.log('VAPID key fetched');
 
             const convertedVapidKey = urlBase64ToUint8Array(publicKey);
 
@@ -55,6 +74,7 @@ export default function SubscriptionManager() {
                 userVisibleOnly: true,
                 applicationServerKey: convertedVapidKey
             });
+            console.log('Subscribed successfully');
 
             setSubscription(sub);
             setIsSubscribed(true);
@@ -71,7 +91,9 @@ export default function SubscriptionManager() {
             alert('Varsler er aktivert!');
         } catch (error) {
             console.error('Subscription error:', error);
-            alert('Kunne ikke aktivere varsler. Sjekk konsollen.');
+            alert('Kunne ikke aktivere varsler. Sjekk konsollen eller prøv igjen.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -93,9 +115,10 @@ export default function SubscriptionManager() {
             ) : (
                 <button
                     onClick={subscribeUser}
-                    className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition"
+                    disabled={loading}
+                    className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition disabled:opacity-50"
                 >
-                    Skrur på varsler
+                    {loading ? 'Oppretter forbindelse...' : 'Skrur på varsler'}
                 </button>
             )}
         </div>
