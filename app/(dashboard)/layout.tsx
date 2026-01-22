@@ -119,7 +119,7 @@ export default function DashboardLayout({
             <div className="flex-1 flex flex-col min-w-0">
                 {/* Mobile Header (Hidden on Desktop if Sidebar handles logo? No, usually keep header for mobile) */}
                 {/* Actually, let's keep a Header for Mobile ONLY, or adapted for desktop (e.g. just user profile) */}
-                <header className="border-b bg-card/50 backdrop-blur-md sticky top-0 z-50 md:hidden">
+                <header className="border-b bg-background sticky top-0 z-50 md:hidden">
                     <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
                         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary shrink-0">
                             <span>hundemedisin</span>
@@ -151,7 +151,7 @@ export default function DashboardLayout({
 
                 {/* Mobile Bottom Navigation - Global */}
                 {dogId && (
-                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-lg border-t z-50 md:hidden pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t z-50 md:hidden pb-[calc(1rem+env(safe-area-inset-bottom))]">
                         <div className="max-w-md mx-auto flex justify-around items-center">
                             {navItems.map((item) => {
                                 const isActive = item.exact
