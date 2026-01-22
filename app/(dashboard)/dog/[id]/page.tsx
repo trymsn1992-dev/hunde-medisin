@@ -336,7 +336,8 @@ export default function DogDashboardPage() {
     }
 
     const changeDate = (days: number) => {
-        setDirection(days > 0 ? 1 : -1)
+        const dir = days > 0 ? 1 : -1
+        setDirection(dir)
         const newDate = new Date(currentDate)
         newDate.setDate(newDate.getDate() + days)
         const dateString = newDate.toISOString().split('T')[0]
@@ -360,7 +361,7 @@ export default function DogDashboardPage() {
 
     const variants = {
         enter: (direction: number) => ({
-            x: direction > 0 ? 50 : -50,
+            x: direction > 0 ? 100 : -100, // Increased distance
             opacity: 0,
             scale: 0.95
         }),
@@ -368,13 +369,13 @@ export default function DogDashboardPage() {
             x: 0,
             opacity: 1,
             scale: 1,
-            transition: { duration: 0.2, ease: "easeOut" }
+            transition: { duration: 0.3, ease: "easeOut" } // Slower duration
         },
         exit: (direction: number) => ({
-            x: direction > 0 ? -50 : 50,
+            x: direction > 0 ? -100 : 100, // Increased distance
             opacity: 0,
             scale: 0.95,
-            transition: { duration: 0.15, ease: "easeIn" }
+            transition: { duration: 0.2, ease: "easeIn" }
         })
     }
 
