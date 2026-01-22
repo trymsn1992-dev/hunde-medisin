@@ -27,16 +27,35 @@ export default function DogProfilePage() {
     const [isEditing, setIsEditing] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
-    const [testingPush, setTestingPush] = useState(false)
+    const [members, setMembers] = useState<any[]>([])
+    const [currentMember, setCurrentMember] = useState<any>(null)
 
     useEffect(() => {
         const fetchDog = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+
+            // Fetch Dog
             const { data } = await supabase.from("dogs").select("*").eq("id", dogId).single()
             if (data) {
                 setDog(data)
                 setPreviewUrl(data.image_url)
                 setImageUrl(data.image_url || "")
             }
+
+            // Fetch Members
+            const { data: membersData } = await supabase
+                .from("dog_members")
+                .select("*, profiles(full_name, avatar_url)")
+                .eq("dog_id", dogId)
+
+            if (membersData) {
+                setMembers(membersData)
+                if (user) {
+                    const me = membersData.find(m => m.user_id === user.id)
+                    setCurrentMember(me)
+                }
+            }
+
             setLoading(false)
         }
         fetchDog()
@@ -87,50 +106,47 @@ export default function DogProfilePage() {
         setSuccess(null)
 
         try {
-            // Include dogId manually since we aren't using bind() with useFormState anymore
-            // Wait, updateDogProfile expects (dogId, prevState, formData)
-            // But if we call it directly, we can just call it differently?
-            // Actually, the server action is defined as:
-            // export async function updateDogProfile(dogId: string, prevState: any, formData: FormData)
-
-            // So we need to call:
+            // 1. Update Dog Profile
             const result = await updateDogProfile(dogId, null, formData)
 
-            if (result?.message) {
-                if (result.success) {
-                    setSuccess(result.message)
-                    setIsEditing(false)
-                    // RE-FETCH data immediately
-                    const { data: updatedDog } = await supabase.from("dogs").select("*").eq("id", dogId).single()
-                    if (updatedDog) setDog(updatedDog)
-                    router.refresh()
-                } else {
-                    setError(result.message)
+            if (!result.success) {
+                setError(result.message)
+                return
+            }
+
+            // 2. Update Member Settings
+            const memberSettings = {
+                missed_meds_alert_enabled: formData.has("member_missed_meds_alert"),
+                notify_on_dose_taken: formData.has("member_notify_on_dose_taken")
+            }
+            await updateMemberSettings(dogId, memberSettings)
+
+            setSuccess("Profil og innstillinger oppdatert!")
+            setIsEditing(false)
+
+            // RE-FETCH data immediately
+            const { data: { user } } = await supabase.auth.getUser()
+            const { data: updatedDog } = await supabase.from("dogs").select("*").eq("id", dogId).single()
+            if (updatedDog) setDog(updatedDog)
+
+            const { data: membersData } = await supabase
+                .from("dog_members")
+                .select("*, profiles(full_name, avatar_url)")
+                .eq("dog_id", dogId)
+            if (membersData) {
+                setMembers(membersData)
+                if (user) {
+                    const me = membersData.find(m => m.user_id === user.id)
+                    setCurrentMember(me)
                 }
             }
+
+            router.refresh()
         } catch (e: any) {
             console.error("Save error:", e)
             setError("Noe gikk galt under lagring.")
         } finally {
             setSaving(false)
-        }
-    }
-
-    const sendTestNotification = async () => {
-        setTestingPush(true);
-        try {
-            const res = await fetch('/api/notifications/test', { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                alert('Test-varsel sendt!');
-            } else {
-                alert('Feil: ' + (data.error || 'Kunne ikke sende varsel'));
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Noe gikk galt.');
-        } finally {
-            setTestingPush(false);
         }
     }
 
@@ -282,15 +298,18 @@ export default function DogProfilePage() {
                                         <Label htmlFor="missed_meds_alert_enabled">Varsle meg hvis jeg glemmer medisin</Label>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="missed_meds_delay_minutes">Ventetid før varsel (minutter)</Label>
-                                        <Input
-                                            id="missed_meds_delay_minutes"
+                                        <Label htmlFor="missed_meds_delay_hours">Varsle etter (timer ubesvart)</Label>
+                                        <select
+                                            id="missed_meds_delay_hours"
                                             name="missed_meds_delay_minutes"
-                                            type="number"
+                                            className="w-full p-2 rounded-md border bg-background"
                                             defaultValue={dog?.missed_meds_delay_minutes || 120}
-                                            min="15"
-                                        />
-                                        <p className="text-xs text-muted-foreground">Standard er 120 minutter (2 timer).</p>
+                                        >
+                                            <option value="60">1 time</option>
+                                            <option value="120">2 timer</option>
+                                            <option value="180">3 timer</option>
+                                        </select>
+                                        <p className="text-xs text-muted-foreground">Hvor lenge skal vi vente før vi varsler hvis ingen logger medisinen?</p>
                                     </div>
                                 </div>
                             </div>
@@ -314,26 +333,53 @@ export default function DogProfilePage() {
                     )}
                 </CardContent>
             </Card>
+            {/* MEMBERS LIST */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Hvem ser på {dog?.name}?</CardTitle>
+                    <CardDescription>Oversikt over alle som følger hunden.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {members.map((member) => (
+                            <div key={member.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                                <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+                                    {member.profiles?.avatar_url ? (
+                                        <img src={member.profiles.avatar_url} alt={member.profiles.full_name} className="h-full w-full object-cover" />
+                                    ) : (
+                                        <span className="text-sm font-bold">{member.profiles?.full_name?.charAt(0) || "U"}</span>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm truncate">{member.profiles?.full_name}</p>
+                                    <p className="text-xs text-muted-foreground capitalize">{member.role === 'admin' ? 'Administrator' : 'Medlem'}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* ACCESS CARD */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Tilgang & deling</CardTitle>
-                    <CardDescription>Inviter andre til å administrere denne hunden.</CardDescription>
+                    <CardTitle>Inviter flere</CardTitle>
+                    <CardDescription>Del tilgang med familiemedlemmer.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
                             <div className="space-y-1">
-                                <p className="font-medium text-sm">Inviter familiemedlem</p>
-                                <p className="text-xs text-muted-foreground">Del lenken for å gi tilgang.</p>
+                                <p className="font-medium text-sm">Invitasjonslenke</p>
+                                <p className="text-xs text-muted-foreground">Kopier og send til de som skal ha tilgang.</p>
                             </div>
                             <Button variant="outline" size="sm" onClick={() => {
                                 const url = `${window.location.origin}/join/${dog?.invite_code}`
                                 navigator.clipboard.writeText(url)
-                                alert("Invitasjonslenke kopiert! Send den til de som skal ha tilgang.")
+                                alert("Invitasjonslenke kopiert!")
                             }}>
                                 <UserPlus className="mr-2 h-4 w-4" />
-                                Kopier lenke
+                                Kopier
                             </Button>
                         </div>
                     </div>
@@ -343,20 +389,53 @@ export default function DogProfilePage() {
             {/* NOTIFICATIONS CARD */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Dine varslinger</CardTitle>
-                    <CardDescription>Administrer varslinger på denne enheten.</CardDescription>
+                    <CardTitle>Mine varslinger</CardTitle>
+                    <CardDescription>Administrer varslinger for din mobil/enhet.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                     <SubscriptionManager />
-                    <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={sendTestNotification}
-                        disabled={testingPush}
-                    >
-                        {testingPush ? <Loader2 className="animate-spin mr-2" /> : null}
-                        Send test-varsel til min telefon
-                    </Button>
+
+                    {currentMember && (
+                        <div className="space-y-4 pt-4 border-t">
+                            <h4 className="text-sm font-semibold">Innstillinger for denne enheten</h4>
+
+                            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                                <div className="space-y-0.5">
+                                    <Label className="text-sm font-medium">Glemt medisin</Label>
+                                    <p className="text-xs text-muted-foreground">Få varsel hvis ingen logger medisinen.</p>
+                                </div>
+                                <input
+                                    type="checkbox"
+                                    className="h-5 w-5 rounded border-gray-300"
+                                    checked={currentMember.missed_meds_alert_enabled}
+                                    onChange={async (e) => {
+                                        const success = await updateMemberSettings(dogId, { missed_meds_alert_enabled: e.target.checked })
+                                        if (success.success) {
+                                            setCurrentMember({ ...currentMember, missed_meds_alert_enabled: e.target.checked })
+                                        }
+                                    }}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                                <div className="space-y-0.5">
+                                    <Label className="text-sm font-medium">Når andre gir medisin</Label>
+                                    <p className="text-xs text-muted-foreground">Få beskjed når andre logfører en dose.</p>
+                                </div>
+                                <input
+                                    type="checkbox"
+                                    className="h-5 w-5 rounded border-gray-300"
+                                    checked={currentMember.notify_on_dose_taken}
+                                    onChange={async (e) => {
+                                        const success = await updateMemberSettings(dogId, { notify_on_dose_taken: e.target.checked })
+                                        if (success.success) {
+                                            setCurrentMember({ ...currentMember, notify_on_dose_taken: e.target.checked })
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

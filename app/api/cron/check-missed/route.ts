@@ -226,11 +226,12 @@ export async function GET() {
                         if (missingCount > (sentCount || 0)) {
                             // WE NEED TO SEND A NOTIFICATION.
 
-                            // Get subscribers (Dog Members)
+                            // Get subscribers (Dog Members who have alerts enabled)
                             const { data: members } = await supabase
                                 .from('dog_members')
                                 .select('user_id')
-                                .eq('dog_id', dog.id);
+                                .eq('dog_id', dog.id)
+                                .eq('missed_meds_alert_enabled', true);
 
                             const userIds = members?.map(m => m.user_id) || [];
 

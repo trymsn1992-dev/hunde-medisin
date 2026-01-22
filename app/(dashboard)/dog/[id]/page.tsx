@@ -278,6 +278,21 @@ export default function DogDashboardPage() {
                     notes: useScheduledTime ? 'Logget tilbake i tid' : 'Markert fra dashboard'
                 })
                 if (error) throw error
+
+                // 2. Trigger notifications for other members
+                try {
+                    fetch('/api/notifications/notify-taken', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            dogId: dose.dogId,
+                            medicineName: dose.medicineName,
+                            status: 'taken'
+                        }),
+                        headers: { 'Content-Type': 'application/json' }
+                    }).catch(err => console.error("Notification trigger failed:", err))
+                } catch (e) {
+                    console.error("Fetch failed", e)
+                }
             }
             // Optimistic Haptic Feedback (Android/Mobile)
             if (dose.status !== 'taken' && typeof navigator !== 'undefined' && navigator.vibrate) {

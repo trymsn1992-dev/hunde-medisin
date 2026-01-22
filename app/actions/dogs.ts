@@ -171,3 +171,23 @@ export async function updateLastVisitedDog(dogId: string) {
         .update({ last_visited_dog_id: dogId })
         .eq('id', user.id)
 }
+export async function updateMemberSettings(dogId: string, settings: { missed_meds_alert_enabled?: boolean, notify_on_dose_taken?: boolean }) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { success: false, message: "Ikke logget inn" }
+
+    const { error } = await supabase
+        .from('dog_members')
+        .update(settings)
+        .eq('dog_id', dogId)
+        .eq('user_id', user.id)
+
+    if (error) {
+        console.error("Update member settings error:", error)
+        return { success: false, message: "Kunne ikke oppdatere innstillinger: " + error.message }
+    }
+
+    revalidatePath(`/dog/${dogId}/profile`)
+    return { success: true, message: "Innstillinger oppdatert!" }
+}
