@@ -325,7 +325,7 @@ export default function HistoryPage() {
     const weekDays = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"]
 
     return (
-        <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col max-w-5xl mx-auto">
+        <div className="space-y-6 h-[calc(100vh-120px)] flex flex-col max-w-5xl mx-auto">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -589,7 +589,7 @@ export default function HistoryPage() {
                                     key={dateKey}
                                     onClick={() => setSelectedDate(date)}
                                     className={cn(
-                                        "bg-background p-0.5 sm:p-1 flex flex-col relative transition-all duration-200 cursor-pointer hover:bg-accent/40 min-h-[70px] sm:min-h-[90px] group",
+                                        "bg-background p-0.5 sm:p-1 flex flex-col relative transition-all duration-200 cursor-pointer hover:bg-accent/40 min-h-[45px] sm:min-h-[80px] group",
                                         !isCurrentMonth && "bg-muted/5 opacity-50",
                                         isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5 shadow-md"
                                     )}
