@@ -55,7 +55,8 @@ export default function ManualEntryPage() {
                     id: f.url, // Use URL as ID for key
                     name: f.name,
                     default_strength: f.strength,
-                    source: "Felleskatalogen"
+                    source: "Felleskatalogen",
+                    description: f.description
                 }))
 
                 // Combine
@@ -191,6 +192,7 @@ export default function ManualEntryPage() {
                                                                 onSelect={() => {
                                                                     setName(med.name)
                                                                     if (med.default_strength) setStrength(med.default_strength)
+                                                                    if (med.description) setNotes(med.description)
                                                                     setOpenCombobox(false)
                                                                 }}
                                                                 onMouseDown={(e) => {
@@ -202,6 +204,7 @@ export default function ManualEntryPage() {
                                                                     // Manual trigger to be safe
                                                                     setName(med.name)
                                                                     if (med.default_strength) setStrength(med.default_strength)
+                                                                    if (med.description) setNotes(med.description)
                                                                     setOpenCombobox(false)
                                                                 }}
                                                             >
