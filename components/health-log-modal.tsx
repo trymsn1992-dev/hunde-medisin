@@ -64,8 +64,8 @@ export function HealthLogModal({ dogId, dogName, trigger, onComplete }: HealthLo
     }
 
     const cycleHungry = (current: string) => {
-        if (current === "Nei") return "Ja"
-        if (current === "Ja") return "Veldig"
+        if (current === "Nei") return "Litt"
+        if (current === "Litt") return "Veldig"
         return "Nei"
     }
 
@@ -207,10 +207,10 @@ export function HealthLogModal({ dogId, dogName, trigger, onComplete }: HealthLo
                             />
                             <SmallCycleCard
                                 label="Sulten"
-                                value={hungryLevel}
+                                value={hungryLevel === "Litt" ? "Ja" : hungryLevel}
                                 onClick={() => setHungryLevel(cycleHungry(hungryLevel))}
                                 icon={<Utensils className="h-4 w-4" />}
-                                activeColor={hungryLevel === "Ja" ? "bg-orange-500" : "bg-orange-600"}
+                                activeColor={hungryLevel === "Litt" ? "bg-orange-500" : "bg-orange-600"}
                                 inactiveValue="Nei"
                             />
                             <SmallToggleCard
