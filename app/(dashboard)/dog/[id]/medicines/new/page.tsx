@@ -12,15 +12,9 @@ export default function NewMedicinePage() {
 
     return (
         <div className="max-w-lg mx-auto space-y-6">
-            <Button variant="ghost" size="sm" asChild>
-                <Link href={`/dog/${dogId}/medicines`}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
-                </Link>
-            </Button>
-
-            <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold">Add Medicine</h1>
-                <p className="text-muted-foreground">Choose how you want to add the medication.</p>
+            <div className="text-center space-y-2 pt-4">
+                <h1 className="text-2xl font-bold">Legg til medisin</h1>
+                <p className="text-muted-foreground">Velg hvordan du vil legge til medisinen.</p>
             </div>
 
             <div className="grid gap-4">
@@ -31,8 +25,8 @@ export default function NewMedicinePage() {
                                 <Camera className="h-6 w-6 text-primary" />
                             </div>
                             <div className="flex-1">
-                                <CardTitle>Scan Label</CardTitle>
-                                <CardDescription>Snap a photo to auto-fill details</CardDescription>
+                                <CardTitle>Skann etikett</CardTitle>
+                                <CardDescription>Ta bilde for å fylle ut automatisk</CardDescription>
                             </div>
                         </CardHeader>
                     </Card>
@@ -45,8 +39,8 @@ export default function NewMedicinePage() {
                                 <Edit3 className="h-6 w-6 text-foreground" />
                             </div>
                             <div className="flex-1">
-                                <CardTitle>Enter Manually</CardTitle>
-                                <CardDescription>Type in name and dosage yourself</CardDescription>
+                                <CardTitle>Legg til manuelt</CardTitle>
+                                <CardDescription>Skriv inn navn og dosering selv</CardDescription>
                             </div>
                         </CardHeader>
                     </Card>
