@@ -482,9 +482,6 @@ export default function DogDashboardPage() {
                                                 <div className="flex-1 min-w-0 pr-2">
                                                     <div className="flex flex-col">
                                                         <span className="font-bold text-base leading-tight break-words">{dose.medicineName}</span>
-                                                        {dose.medicineNotes && (
-                                                            <span className="text-xs opacity-80 font-medium italic leading-tight mt-1 break-words">{dose.medicineNotes}</span>
-                                                        )}
                                                         <span className="text-[10px] font-bold uppercase tracking-wider opacity-70 mt-2">{dose.doseText}</span>
                                                     </div>
                                                 </div>
