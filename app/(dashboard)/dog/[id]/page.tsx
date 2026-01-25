@@ -468,7 +468,8 @@ export default function DogDashboardPage() {
 
                                         <Card className={cn(
                                             "transition-all overflow-hidden shadow-sm border",
-                                            isTaken ? "opacity-75 grayscale-[0.5] bg-muted/30" : softStyle,
+                                            softStyle, // Always apply color
+                                            isTaken ? "opacity-60" : "", // Just fade it when taken
                                             !isTaken && dose.status === 'overdue' && "border-red-500 ring-1 ring-red-500/20"
                                         )}>
                                             <div className="flex items-center p-3 gap-3">
