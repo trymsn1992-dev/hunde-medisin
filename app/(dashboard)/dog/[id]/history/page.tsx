@@ -561,11 +561,6 @@ export default function HistoryPage() {
                             const dayData = calendarDaysMap[dateKey] || { doses: [], health: [] }
                             const isSelected = selectedDate && isSameDay(date, selectedDate)
 
-                            const hasHealthIssues = dayData.health.some((h: any) =>
-                                (h.stool && h.stool !== 'Normal') ||
-                                (h.itch_locations && h.itch_locations.length > 0) ||
-                                !h.is_playful || !h.wants_walk || !h.is_hungry || !h.is_thirsty
-                            )
 
                             // Aggregate Doses
                             const aggregates: Record<string, { count: number, name: string, color: string }> = {}
@@ -606,13 +601,6 @@ export default function HistoryPage() {
                                             isToday(date) ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
                                         )}>
                                             {format(date, 'd')}
-                                        </div>
-
-                                        {/* Health Indicators */}
-                                        <div className="flex gap-0.5">
-                                            {hasHealthIssues && (
-                                                <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                                            )}
                                         </div>
                                     </div>
 
