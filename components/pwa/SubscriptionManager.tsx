@@ -134,9 +134,30 @@ export default function SubscriptionManager() {
             </p>
 
             {isSubscribed ? (
-                <span className="text-green-600 text-sm flex items-center gap-2">
-                    ✓ Varsler er på
-                </span>
+                <div className="flex flex-col gap-2">
+                    <span className="text-green-600 text-sm flex items-center gap-2">
+                        ✓ Varsler er på
+                    </span>
+                    <button
+                        onClick={async () => {
+                            setLoading(true);
+                            try {
+                                const res = await fetch('/api/notifications/test', { method: 'POST' });
+                                const data = await res.json();
+                                if (data.success && data.sent > 0) alert("Test sendt! Sjekk varslingssenteret.");
+                                else alert("Kunne ikke sende test: " + (data.message || data.error || JSON.stringify(data)));
+                            } catch (e: any) {
+                                alert("Feil: " + e.message);
+                            } finally {
+                                setLoading(false);
+                            }
+                        }}
+                        disabled={loading}
+                        className="text-xs bg-muted border p-1 rounded hover:bg-muted/80 w-full"
+                    >
+                        {loading ? 'Sender...' : 'Send test-varsel'}
+                    </button>
+                </div>
             ) : (
                 <button
                     onClick={subscribeUser}

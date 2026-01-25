@@ -21,6 +21,6 @@ self.addEventListener('notificationclick', function (event) {
     console.log('Notification click received.');
     event.notification.close();
     event.waitUntil(
-        clients.openWindow('https://hunde-medisin.vercel.app') // Update this to your deployed URL or dynamic logic
+        clients.openWindow(self.location.origin)
     );
 });
