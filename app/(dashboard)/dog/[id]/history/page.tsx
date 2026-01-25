@@ -53,7 +53,7 @@ export default function HistoryPage() {
     const [medicines, setMedicines] = useState<any[]>([])
     const [selectedMedicine, setSelectedMedicine] = useState<string>("all")
     const [loading, setLoading] = useState(true)
-    const [view, setView] = useState<'list' | 'calendar'>('list')
+    const [view, setView] = useState<'list' | 'calendar'>('calendar')
 
     // Custom Calendar State
     const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -74,6 +74,23 @@ export default function HistoryPage() {
 
     const supabase = createClient()
 
+    // Helper to abbreviate name
+    const abbreviate = (name: string) => {
+        if (!name) return ""
+        return name.substring(0, 3)
+    }
+
+    // Helper to parse dose amount
+    const parseAmount = (text: string) => {
+        if (!text) return 1 // Default to 1 event if no text
+        // replace comma with dot
+        const clean = text.replace(',', '.').toLowerCase()
+        const match = clean.match(/^(\d+(\.\d+)?)/)
+        if (match) return parseFloat(match[1])
+        if (clean.includes('halv') || clean.includes('1/2')) return 0.5
+        return 1
+    }
+
     // Load initial data
     useEffect(() => {
         const load = async () => {
@@ -87,7 +104,8 @@ export default function HistoryPage() {
                         start_date,
                         end_date,
                         active,
-                        created_at
+                        created_at,
+                        dose_text
                     )
                 `)
                 .eq('dog_id', dogId)
@@ -102,6 +120,7 @@ export default function HistoryPage() {
                     taken_at,
                     notes,
                     status,
+                    plan_id,
                     medicine:medicines(id, name, color),
                     taker:taken_by(full_name)
                 `)
@@ -548,61 +567,70 @@ export default function HistoryPage() {
                                 !h.is_playful || !h.wants_walk || !h.is_hungry || !h.is_thirsty
                             )
 
+                            // Aggregate Doses
+                            const aggregates: Record<string, { count: number, name: string, color: string }> = {}
+                            dayData.doses.forEach(log => {
+                                const medId = log.medicine?.id
+                                if (!medId) return
+
+                                if (!aggregates[medId]) {
+                                    aggregates[medId] = {
+                                        count: 0,
+                                        name: log.medicine.name,
+                                        color: getMedicineColor(medId, log.medicine.color)
+                                    }
+                                }
+
+                                // Find Plan to get dose_text
+                                // We need to search in medicines state
+                                const med = medicines.find(m => m.id === medId)
+                                const plan = med?.plans?.find((p: any) => p.id === log.plan_id)
+                                const amount = parseAmount(plan?.dose_text || "1")
+
+                                aggregates[medId].count += amount
+                            })
+
                             return (
                                 <div
                                     key={dateKey}
                                     onClick={() => setSelectedDate(date)}
                                     className={cn(
-                                        "bg-background p-1.5 flex flex-col relative transition-all duration-200 cursor-pointer hover:bg-accent/40 min-h-[120px] sm:min-h-[140px] group",
+                                        "bg-background p-1 flex flex-col relative transition-all duration-200 cursor-pointer hover:bg-accent/40 min-h-[80px] sm:min-h-[100px] group",
                                         !isCurrentMonth && "bg-muted/5 opacity-50",
                                         isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5 shadow-md"
                                     )}
                                 >
-                                    <div className="flex justify-between items-center mb-1.5">
+                                    <div className="flex justify-between items-start mb-1">
                                         {/* Date Number */}
                                         <div className={cn(
-                                            "text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full transition-transform group-hover:scale-110",
+                                            "text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full transition-transform group-hover:scale-110",
                                             isToday(date) ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
                                         )}>
                                             {format(date, 'd')}
                                         </div>
 
                                         {/* Health Indicators */}
-                                        <div className="flex gap-1">
+                                        <div className="flex gap-0.5">
                                             {hasHealthIssues && (
-                                                <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_5px_rgba(239,68,68,0.5)]" title="Helseavvik" />
+                                                <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Events List (Doses) */}
-                                    <div className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar pt-1">
-                                        {dayData.doses.slice(0, 6).map(log => {
-                                            const bgClass = getMedicineColor(log.medicine?.id, log.medicine?.color)
-                                            const isMissed = log.status === 'missed'
-                                            return (
-                                                <div
-                                                    key={log.id}
-                                                    className={cn(
-                                                        "flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[9px] sm:text-[10px] font-bold border-l-2 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-all hover:translate-x-0.5",
-                                                        bgClass,
-                                                        "bg-opacity-10 text-foreground border-opacity-100 dark:bg-opacity-20",
-                                                        isMissed && "opacity-60 grayscale-[0.5] border-dashed"
-                                                    )}
-                                                    style={{ borderLeftColor: 'currentColor' }}
-                                                >
-                                                    <span className="truncate flex-1">
-                                                        {isMissed && "⚠️ "}{log.medicine?.name}
-                                                    </span>
-                                                    <span className="opacity-60 font-medium shrink-0 tabular-nums">{format(new Date(log.taken_at), 'HH:mm')}</span>
-                                                </div>
-                                            )
-                                        })}
-                                        {dayData.doses.length > 6 && (
-                                            <div className="text-[9px] font-black text-primary/70 text-center pt-0.5 tracking-tighter uppercase italic">
-                                                +{dayData.doses.length - 6} til...
+                                    {/* Aggregated Events List */}
+                                    <div className="flex-1 flex flex-col gap-0.5 overflow-hidden">
+                                        {Object.values(aggregates).map((agg) => (
+                                            <div
+                                                key={agg.name}
+                                                className={cn(
+                                                    "px-1 rounded-[2px] text-[9px] font-bold truncate leading-tight",
+                                                    agg.color,
+                                                    "bg-opacity-20 text-foreground dark:bg-opacity-30"
+                                                )}
+                                            >
+                                                {Number.isInteger(agg.count) ? agg.count : agg.count.toFixed(1)} x {abbreviate(agg.name)}
                                             </div>
-                                        )}
+                                        ))}
                                     </div>
                                 </div>
                             )
