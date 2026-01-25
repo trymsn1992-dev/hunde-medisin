@@ -156,7 +156,7 @@ export default function DashboardLayout({
                 </main>
 
                 {/* Mobile Bottom Navigation - Global with prominent Center Action */}
-                {dogId && (
+                {dogId && !pathname.endsWith("/scan") && (
                     <div className="fixed bottom-0 left-0 right-0 py-2 px-4 bg-background/95 backdrop-blur-md border-t z-50 md:hidden pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
                         <div className="max-w-md mx-auto flex justify-around items-end">
                             {/* Nav Item 1 & 2 */}
