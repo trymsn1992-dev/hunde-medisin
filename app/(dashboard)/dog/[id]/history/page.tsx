@@ -312,7 +312,6 @@ export default function HistoryPage() {
                     <Button variant="ghost" size="icon" asChild>
                         <Link href={`/dog/${dogId}`}><ArrowLeft className="h-5 w-5" /></Link>
                     </Button>
-                    <h1 className="text-2xl font-bold">Historikk</h1>
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">

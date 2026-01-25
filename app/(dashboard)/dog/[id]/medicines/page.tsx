@@ -160,7 +160,6 @@ export default function MedicinesPage() {
                     <Button variant="ghost" size="icon" asChild>
                         <Link href={`/dog/${dogId}`}><ArrowLeft className="h-5 w-5" /></Link>
                     </Button>
-                    <h1 className="text-2xl font-bold">Medisiner</h1>
                 </div>
                 <Button asChild>
                     <Link href={`/dog/${dogId}/medicines/new`}>

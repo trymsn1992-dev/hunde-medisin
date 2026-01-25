@@ -11,10 +11,6 @@ export default async function HealthPage({ params }: { params: Promise<{ id: str
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Activity className="h-6 w-6 text-primary" />
-                Helserapport
-            </h1>
 
             <div className="bg-card border rounded-xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-4 text-muted-foreground uppercase tracking-wider text-xs font-bold border-b pb-2">
