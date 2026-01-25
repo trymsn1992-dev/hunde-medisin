@@ -431,7 +431,7 @@ export default function DogDashboardPage() {
                         initial="enter"
                         animate="center"
                         exit="exit"
-                        className="grid gap-4"
+                        className="grid gap-0"
                     >
                         {loading ? (
                             <div className="text-center p-8 text-muted-foreground flex flex-col items-center gap-2">
@@ -452,7 +452,7 @@ export default function DogDashboardPage() {
                                 const softStyle = getSoftColor(baseColor)
 
                                 return (
-                                    <div key={i} className="ml-4 pl-6 relative border-l-2 border-muted pb-6 last:pb-0 last:border-l-0">
+                                    <div key={i} className="ml-4 pl-6 relative border-l-2 border-muted pb-4 last:pb-0 last:border-l-0">
                                         {/* Timeline Dot */}
                                         <div className={cn(
                                             "absolute -left-[9px] top-1 h-4 w-4 rounded-full border-2 bg-background transition-colors z-10",
