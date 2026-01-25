@@ -54,9 +54,11 @@ export async function createHealthLog(data: {
         revalidatePath(`/dog/${data.dogId}`)
         return { success: true }
 
-    } catch (error: unknown) {
+    } catch (error: any) {
         console.error("Create Health Log Error:", error)
-        return { success: false, error: error instanceof Error ? error.message : "Failed to save log" }
+        // Check if it's a Supabase error (has message/details) or standard Error
+        const msg = error?.message || error?.details || (typeof error === 'string' ? error : "Failed to save log")
+        return { success: false, error: msg }
     }
 }
 
