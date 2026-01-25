@@ -114,6 +114,21 @@ export default function DashboardLayout({
                                     </Link>
                                 )
                             })}
+
+                            <div className="pt-4 mt-4 border-t">
+                                <Link
+                                    href="/analytics"
+                                    className={cn(
+                                        "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all",
+                                        pathname === "/analytics"
+                                            ? "bg-primary/10 text-primary"
+                                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                    )}
+                                >
+                                    <HeartPulse className="h-4 w-4" /> {/* Reusing HeartPulse or importing Activity if needed, but HeartPulse is imported */}
+                                    Analytics
+                                </Link>
+                            </div>
                         </nav>
                     </div>
                 </aside>

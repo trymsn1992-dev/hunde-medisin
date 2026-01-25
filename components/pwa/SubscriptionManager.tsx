@@ -18,13 +18,17 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export default function SubscriptionManager() {
-    const [isSubscribed, setIsSubscribed] = useState(false);
-    const [subscription, setSubscription] = useState<PushSubscription | null>(null);
-    const [permission, setPermission] = useState<NotificationPermission | 'default'>('default');
-    const [loading, setLoading] = useState(false);
+    const [isSupported, setIsSupported] = useState(true);
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
+        if (typeof window !== 'undefined') {
+            const hasSW = 'serviceWorker' in navigator;
+            const hasPush = 'PushManager' in window;
+            if (!hasSW || !hasPush) {
+                setIsSupported(false);
+                return;
+            }
+
             // 1. Register Service Worker explicitly
             navigator.serviceWorker.register('/sw.js').then(registration => {
                 console.log('SW Registered');
@@ -82,7 +86,12 @@ export default function SubscriptionManager() {
             console.log('SW ready');
 
             const response = await fetch('/api/notifications/vapid-public-key');
-            const { publicKey } = await response.json();
+            const data = await response.json();
+
+            if (!data.publicKey) {
+                throw new Error("VAPID public key not found from server");
+            }
+            const { publicKey } = data;
             console.log('VAPID key fetched');
 
             const convertedVapidKey = urlBase64ToUint8Array(publicKey);
@@ -122,8 +131,15 @@ export default function SubscriptionManager() {
         }
     };
 
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        return null; // Not supported
+    if (!isSupported) {
+        return (
+            <div className="p-4 border rounded-lg bg-yellow-50 flex flex-col gap-2">
+                <h3 className="font-semibold text-sm text-yellow-800">Varslinger ikke tilgjengelig</h3>
+                <p className="text-xs text-yellow-700">
+                    Nettleseren din støtter ikke varslinger, eller du besøker siden via en usikker tilkobling (ikke HTTPS/localhost).
+                </p>
+            </div>
+        )
     }
 
     return (
@@ -156,6 +172,22 @@ export default function SubscriptionManager() {
                         className="text-xs bg-muted border p-1 rounded hover:bg-muted/80 w-full"
                     >
                         {loading ? 'Sender...' : 'Send test-varsel'}
+                    </button>
+                    <button
+                        onClick={async () => {
+                            // Simple unsubscribe logic if needed, or just let them stay subscribed
+                            // For debugging, useful to have "Reset"
+                            if (confirm("Vil du nullstille varsling på denne enheten?")) {
+                                const reg = await navigator.serviceWorker.ready;
+                                const sub = await reg.pushManager.getSubscription();
+                                if (sub) await sub.unsubscribe();
+                                setIsSubscribed(false);
+                                setSubscription(null);
+                            }
+                        }}
+                        className="text-[10px] text-muted-foreground hover:underline self-start"
+                    >
+                        Nullstill varsler
                     </button>
                 </div>
             ) : (
