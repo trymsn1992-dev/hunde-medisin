@@ -160,12 +160,12 @@ export function HealthLogModal({ dogId, dogName, trigger, onComplete }: HealthLo
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="max-w-2xl p-0 flex flex-col h-[90vh] md:h-auto md:max-h-[85vh]">
+            <DialogContent className="w-[95vw] sm:w-full max-w-2xl p-0 flex flex-col h-[90vh] md:h-auto md:max-h-[85vh] overflow-hidden rounded-xl">
                 <DialogHeader className="p-6 border-b pb-4">
                     <DialogTitle>Hvordan har {dogName || "Leo"} det i dag?</DialogTitle>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 overflow-x-hidden">
                     {/* Date - Minimalistic */}
                     <div className="flex items-center justify-between bg-muted/30 p-3 rounded-xl border border-muted-foreground/10">
                         <div className="flex items-center gap-2">
