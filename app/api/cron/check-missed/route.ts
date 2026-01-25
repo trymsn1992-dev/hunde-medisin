@@ -123,7 +123,7 @@ export async function GET() {
                     const [currH, currM] = currentOsloTime.split(':').map(Number);
                     const currMinutes = currH * 60 + currM;
 
-                    const delay = dog.missed_meds_delay_minutes || 120;
+                    const delay = dog.missed_meds_delay_minutes || 60;
 
                     if (currMinutes > (schedMinutes + delay)) {
                         // It is PAST the alarm time.
