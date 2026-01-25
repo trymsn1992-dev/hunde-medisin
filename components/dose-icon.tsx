@@ -51,7 +51,7 @@ export function DoseIcon({ doseText, className, itemClassName }: DoseIconProps) 
         </svg>
     );
 
-    // Capsule (Oblong with split)
+    // Capsule (Two halves)
     const CapsuleIcon = ({ percent = 1, className }: { percent?: number, className?: string }) => (
         <svg
             viewBox="0 0 24 24"
@@ -63,8 +63,10 @@ export function DoseIcon({ doseText, className, itemClassName }: DoseIconProps) 
                 clipPath: percent < 1 ? `inset(0 ${100 - (percent * 100)}% 0 0)` : undefined
             }}
         >
-            <rect x="5" y="4" width="14" height="16" rx="7" stroke="currentColor" strokeWidth="2" fill="none" />
-            <path d="M5 12 L19 12" stroke="currentColor" strokeWidth="2" />
+            {/* Body */}
+            <rect x="6" y="3" width="12" height="18" rx="6" stroke="currentColor" strokeWidth="2" fill="none" />
+            {/* Center Line for two halves */}
+            <line x1="6" y1="12" x2="18" y2="12" stroke="currentColor" strokeWidth="2" />
         </svg>
     );
 

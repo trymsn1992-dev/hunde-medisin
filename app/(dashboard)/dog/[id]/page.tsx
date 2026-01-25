@@ -387,7 +387,7 @@ export default function DogDashboardPage() {
 
     return (
         <div
-            className="max-w-5xl mx-auto min-h-[50vh]"
+            className="max-w-5xl mx-auto min-h-[50vh] pb-32"
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
