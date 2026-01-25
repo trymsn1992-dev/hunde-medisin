@@ -60,8 +60,6 @@ export default function DogDashboardPage() {
 
     const [loading, setLoading] = useState(true)
     const [dogName, setDogName] = useState("")
-    const [inviteCode, setInviteCode] = useState("")
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [doses, setDoses] = useState<DoseEvent[]>([])
 
     // Key to track which dose is currently processing (planId-time)
@@ -107,10 +105,8 @@ export default function DogDashboardPage() {
         if (!user) return
 
         // 1. Fetch Dog Info
-        const { data: dog } = await supabase.from("dogs").select("name, invite_code").eq("id", dogId).single()
         if (dog) {
             setDogName(dog.name)
-            setInviteCode(dog.invite_code)
         }
 
         // 2. Fetch Medicines for this dog
@@ -336,19 +332,7 @@ export default function DogDashboardPage() {
         executeDoseToggle(dose)
     }
 
-    const handleDeleteDog = async () => {
-        // Loading state?
-        const res = await deleteDog(dogId)
-        if (res?.message) {
-            alert(res.message)
-        }
-    }
 
-    const handleInvite = () => {
-        const url = `${window.location.origin}/join/${inviteCode}`
-        navigator.clipboard.writeText(url)
-        alert("Invitasjonslenke kopiert til utklippstavlen! Send den til andre.")
-    }
 
     const changeDate = (days: number) => {
         const dir = days > 0 ? 1 : -1
@@ -396,26 +380,17 @@ export default function DogDashboardPage() {
 
     return (
         <div
-            className="max-w-5xl mx-auto min-h-[50vh] overflow-hidden"
+            className="max-w-5xl mx-auto min-h-[50vh]"
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
         >
 
             {/* Date Navigation Header */}
-            <div className="flex flex-col gap-2 sticky top-16 z-40 md:static md:mt-0 animate-in fade-in slide-in-from-top-4 bg-background pb-2">
+            <div className="flex flex-col gap-2 sticky top-14 z-40 md:static md:mt-0 animate-in fade-in slide-in-from-top-4 bg-background pb-2">
 
-                {/* Top Actions Row */}
                 <div className="flex items-center justify-between gap-2 py-2">
-                    <HealthLogModal dogId={dogId} />
-
-                    <div className="flex-1" /> {/* Spacer */}
-
-                    {inviteCode && (
-                        <Button variant="ghost" size="sm" onClick={handleInvite} className="bg-background border shadow-sm">
-                            <UserPlus className="mr-2 h-4 w-4" /> Del tilgang
-                        </Button>
-                    )}
+                    {/* HealthLogModal moved to FAB */}
                 </div>
 
                 <div className="flex items-center justify-between bg-background p-4 rounded-xl border shadow-sm w-full">
@@ -468,90 +443,59 @@ export default function DogDashboardPage() {
                                 const isTaken = dose.status === 'taken'
 
                                 return (
-                                    <div key={i} className="mb-2">
-                                        <div className="ml-1 mb-1.5 text-sm font-bold flex items-center gap-2">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            {dose.scheduledTime === "08:00" ? "Morgen (08:00)" : dose.scheduledTime === "20:00" ? "Kveld (20:00)" : dose.scheduledTime}
-                                        </div>
-                                        <Card className={cn(
-                                            "transition-all border-l-4 w-full max-w-[368px] md:max-w-none",
-                                            isTaken && "opacity-75 border-l-muted-foreground/30 bg-muted/30",
-                                            !isTaken && dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-md shadow-emerald-500/5",
-                                            !isTaken && dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
-                                            !isTaken && dose.status === 'upcoming' && "border-l-blue-400/50"
-                                        )}>
-                                            <div className="flex items-center p-4 gap-3">
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="mb-1.5">
-                                                        <MedicineBadge
-                                                            medicine={{ id: dose.medicineId, name: dose.medicineName }}
-                                                            className={cn("text-base font-semibold max-w-full whitespace-normal break-words h-auto py-1", isTaken && "opacity-80")}
-                                                        />
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground truncate">{dose.doseText}</p>
-                                                </div>
+                                    <Card key={i} className={cn(
+                                        "transition-all border-l-4 w-full overflow-hidden",
+                                        isTaken && "opacity-75 border-l-muted-foreground/30 bg-muted/30",
+                                        !isTaken && dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-sm",
+                                        !isTaken && dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
+                                        !isTaken && dose.status === 'upcoming' && "border-l-blue-400/50"
+                                    )}>
+                                        <div className="flex items-center p-3 gap-3">
+                                            {/* Left side: Time and Status */}
+                                            <div className="flex flex-col items-center justify-center min-w-[50px] border-r pr-3">
+                                                <span className="text-sm font-bold">{dose.scheduledTime}</span>
+                                                {isTaken && <CheckCircle className="h-4 w-4 text-emerald-500 mt-1" />}
+                                            </div>
 
-                                                <div className="shrink-0">
-                                                    {isTaken ? (
-                                                        <div className="flex flex-col items-end gap-1">
-                                                            <Button
-                                                                onClick={() => toggleDose(dose)}
-                                                                disabled={isProcessing}
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="min-w-[40px] px-3 font-semibold transition-all shadow-sm bg-emerald-100/10 text-emerald-500 border-emerald-500/20 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30"
-                                                            >
-                                                                {isProcessing ? (
-                                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                                ) : (
-                                                                    <CheckCircle className="h-5 w-5" />
-                                                                )}
-                                                            </Button>
-
-                                                            {dose.takenBy && dose.takenAt && (
-                                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-in fade-in slide-in-from-right-2">
-                                                                    {dose.takenBy.avatarUrl ? (
-                                                                        <img
-                                                                            src={dose.takenBy.avatarUrl}
-                                                                            alt={dose.takenBy.name}
-                                                                            className="w-4 h-4 rounded-full border shadow-sm"
-                                                                            title={`Gitt av ${dose.takenBy.name}`}
-                                                                        />
-                                                                    ) : (
-                                                                        <div
-                                                                            className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-bold border"
-                                                                            title={`Gitt av ${dose.takenBy.name}`}
-                                                                        >
-                                                                            {dose.takenBy.name?.[0]?.toUpperCase() || "?"}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <Button
-                                                            onClick={() => toggleDose(dose)}
-                                                            disabled={isProcessing || (!dose.isToday && currentDate > new Date())}
-                                                            size="sm"
-                                                            className={cn(
-                                                                "font-semibold transition-all shadow-sm px-4",
-                                                                dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
-                                                                dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white",
-                                                                dose.status === 'upcoming' && "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                                                                (!dose.isToday && currentDate > new Date()) && "opacity-50 cursor-not-allowed bg-muted text-muted-foreground hover:bg-muted" // Only block future
-                                                            )}
-                                                        >
-                                                            {isProcessing ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                "Gi dose"
-                                                            )}
-                                                        </Button>
-                                                    )}
+                                            {/* Middle side: Medicine Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    <span className="font-semibold text-sm truncate">{dose.medicineName}</span>
+                                                    <span className="text-xs text-muted-foreground">{dose.doseText}</span>
                                                 </div>
                                             </div>
-                                        </Card>
-                                    </div>
+
+                                            {/* Right side: Action */}
+                                            <div className="shrink-0">
+                                                {!isTaken ? (
+                                                    <Button
+                                                        onClick={() => toggleDose(dose)}
+                                                        disabled={isProcessing || (!dose.isToday && currentDate > new Date())}
+                                                        size="sm"
+                                                        className={cn(
+                                                            "h-9 px-4 font-bold text-xs transition-all",
+                                                            dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
+                                                            dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white",
+                                                            dose.status === 'upcoming' && "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+                                                            (!dose.isToday && currentDate > new Date()) && "opacity-50 cursor-not-allowed"
+                                                        )}
+                                                    >
+                                                        {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : "Gi dose"}
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        onClick={() => toggleDose(dose)}
+                                                        disabled={isProcessing}
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-9 w-9 text-muted-foreground hover:text-red-500"
+                                                    >
+                                                        {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <div className="text-[10px] font-bold">Angre</div>}
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </Card>
                                 )
                             })
                         )}
@@ -559,25 +503,6 @@ export default function DogDashboardPage() {
                 </AnimatePresence>
             </div>
 
-            <div className="pt-8 border-t flex flex-col items-center gap-4">
-                {!showDeleteConfirm ? (
-                    <Button variant="link" className="text-destructive/50 hover:text-destructive text-xs" onClick={() => setShowDeleteConfirm(true)}>
-                        Slett hundeprofil
-                    </Button>
-                ) : (
-                    <div className="flex flex-col sm:flex-row items-center gap-4 bg-red-50 dark:bg-red-900/10 p-4 rounded-lg border border-red-100 dark:border-red-900/20 w-full">
-                        <div className="text-center sm:text-left flex-1">
-                            <p className="font-semibold text-destructive">Slette {dogName}?</p>
-                            <p className="text-xs text-muted-foreground">All historikk vil bli borte for alltid.</p>
-                        </div>
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            <Button variant="destructive" size="sm" onClick={handleDeleteDog}>Slett</Button>
-                            <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>Avbryt</Button>
-                        </div>
-                    </div>
-
-                )}
-            </div>
 
             <AlertDialog open={!!pendingDose} onOpenChange={(open) => !open && setPendingDose(null)}>
                 <AlertDialogContent>
@@ -599,6 +524,7 @@ export default function DogDashboardPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
         </div>
     )
 }

@@ -8,9 +8,20 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Loader2, Camera, Upload, PawPrint, Weight, ArrowLeft, UserPlus } from "lucide-react"
-import { updateDogProfile, updateMemberSettings } from "@/app/actions/dogs"
+import { updateDogProfile, updateMemberSettings, deleteDog } from "@/app/actions/dogs"
 import Link from "next/link"
 import SubscriptionManager from "@/components/pwa/SubscriptionManager"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { LogOut, Trash2 } from "lucide-react"
 
 export default function DogProfilePage() {
     const params = useParams()
@@ -29,6 +40,7 @@ export default function DogProfilePage() {
     const [success, setSuccess] = useState<string | null>(null)
     const [members, setMembers] = useState<any[]>([])
     const [currentMember, setCurrentMember] = useState<any>(null)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
     useEffect(() => {
         const fetchDog = async () => {
@@ -438,6 +450,53 @@ export default function DogProfilePage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* SECURITY & LOGOUT */}
+            <Card className="border-destructive/20 bg-destructive/5">
+                <CardHeader>
+                    <CardTitle className="text-destructive">Sikkerhet & Logg ut</CardTitle>
+                    <CardDescription>Logg ut av appen eller slett denne hundeprofilen.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Button
+                            variant="outline"
+                            className="bg-background hover:bg-muted"
+                            onClick={handleLogout}
+                        >
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Logg ut
+                        </Button>
+
+                        {currentMember?.role === 'admin' && (
+                            <Button
+                                variant="destructive"
+                                onClick={() => setShowDeleteConfirm(true)}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Slett hundeprofil
+                            </Button>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Er du helt sikker?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Dette vil slette profilen til <strong>{dog?.name}</strong> og all tilhørende historikk for alle medlemmer. Denne handlingen kan ikke angres.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteDog} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Ja, slett profil
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

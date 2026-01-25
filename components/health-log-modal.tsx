@@ -6,7 +6,7 @@ import { createHealthLog } from "@/app/actions/health"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Activity, Footprints, Utensils, Droplets, Dog, Save, Heart, Loader2 } from "lucide-react"
+import { Activity, Footprints, Utensils, Droplets, Dog, Save, Heart, Loader2, HeartPulse, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const STOOL_TYPES = ["Normal", "Ingen", "Hard", "Bløt", "Rød", "Mørk"]
@@ -16,11 +16,12 @@ const ITCH_ZONES = [
 
 interface HealthLogModalProps {
     dogId: string
+    dogName?: string
     trigger?: React.ReactNode
     onComplete?: () => void
 }
 
-export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalProps) {
+export function HealthLogModal({ dogId, dogName, trigger, onComplete }: HealthLogModalProps) {
     const router = useRouter()
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -31,13 +32,42 @@ export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalPro
     // States
     const [isPlayful, setIsPlayful] = useState<boolean>(true)
     const [wantsWalk, setWantsWalk] = useState<boolean>(true)
-    const [isHungry, setIsHungry] = useState<boolean>(true)
+    const [hungryLevel, setHungryLevel] = useState<string>("Ja")
     const [isThirsty, setIsThirsty] = useState<boolean>(true)
+    const [stressLevel, setStressLevel] = useState<string>("Nei")
+    const [sleepLevel, setSleepLevel] = useState<string>("Normal")
 
     const [stool, setStool] = useState<string | null>(null)
     const [coneUsage, setConeUsage] = useState<string>("Ingen")
+    const [bootUsage, setBootUsage] = useState<string>("Ingen")
+    const [cageUsage, setCageUsage] = useState<string>("Ingen")
     const [itchSeverity, setItchSeverity] = useState<Record<string, number>>({})
     const [notes, setNotes] = useState("")
+    const [showNotes, setShowNotes] = useState(false)
+
+    const cycleLevel = (current: string) => {
+        if (current === "Ingen") return "Litt"
+        if (current === "Litt") return "Mye"
+        return "Ingen"
+    }
+
+    const cycleStress = (current: string) => {
+        if (current === "Nei") return "Litt"
+        if (current === "Litt") return "Veldig"
+        return "Nei"
+    }
+
+    const cycleSleep = (current: string) => {
+        if (current === "Normal") return "Lite"
+        if (current === "Lite") return "Mye"
+        return "Normal"
+    }
+
+    const cycleHungry = (current: string) => {
+        if (current === "Nei") return "Ja"
+        if (current === "Ja") return "Veldig"
+        return "Nei"
+    }
 
     const toggleItch = (zone: string) => {
         setItchSeverity(prev => {
@@ -86,10 +116,14 @@ export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalPro
                 date,
                 isPlayful,
                 wantsWalk,
-                isHungry,
+                hungryLevel,
                 isThirsty,
+                stressedLevel: stressLevel,
+                sleepLevel,
                 stool,
-                coneUsage, // Added
+                coneUsage,
+                bootUsage,
+                cageUsage,
                 itchLocations,
                 notes
             })
@@ -126,15 +160,12 @@ export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalPro
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Hvordan har hunden det i dag?</DialogTitle>
-                    <DialogDescription>
-                        Registrer dagsform, matlyst og eventuelle symptomer.
-                    </DialogDescription>
+            <DialogContent className="max-w-2xl p-0 flex flex-col h-[90vh] md:h-auto md:max-h-[85vh]">
+                <DialogHeader className="p-6 border-b pb-4">
+                    <DialogTitle>Hvordan har {dogName || "Leo"} det i dag?</DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-6 py-4">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* Date */}
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium">Dato</label>
@@ -146,67 +177,114 @@ export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalPro
                         />
                     </div>
 
-                    {/* General Mood/Appetite Grid */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <ToggleCard
-                            label="Leken?"
-                            active={isPlayful}
-                            onClick={() => setIsPlayful(!isPlayful)}
-                            icon={<Activity className="h-6 w-6" />}
-                            color="text-pink-500"
-                            bgColor="bg-pink-500/10"
-                            activeBg="bg-pink-500"
-                        />
-                        <ToggleCard
-                            label="Vil gå tur?"
-                            active={wantsWalk}
-                            onClick={() => setWantsWalk(!wantsWalk)}
-                            icon={<Footprints className="h-6 w-6" />}
-                            color="text-green-500"
-                            bgColor="bg-green-500/10"
-                            activeBg="bg-green-500"
-                        />
-                        <ToggleCard
-                            label="Sulten?"
-                            active={isHungry}
-                            onClick={() => setIsHungry(!isHungry)}
-                            icon={<Utensils className="h-6 w-6" />}
-                            color="text-orange-500"
-                            bgColor="bg-orange-500/10"
-                            activeBg="bg-orange-500"
-                        />
-                        <ToggleCard
-                            label="Tørst?"
-                            active={isThirsty}
-                            onClick={() => setIsThirsty(!isThirsty)}
-                            icon={<Droplets className="h-6 w-6" />}
-                            color="text-blue-500"
-                            bgColor="bg-blue-500/10"
-                            activeBg="bg-blue-500"
-                        />
+                    {/* Category 1: Helse */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Helse</h3>
+                        <div className="grid grid-cols-3 gap-2">
+                            <SmallToggleCard
+                                label="Leken"
+                                active={isPlayful}
+                                onClick={() => setIsPlayful(!isPlayful)}
+                                icon={<Activity className="h-4 w-4" />}
+                                activeColor="bg-pink-500"
+                            />
+                            <SmallToggleCard
+                                label="Gå tur"
+                                active={wantsWalk}
+                                onClick={() => setWantsWalk(!wantsWalk)}
+                                icon={<Footprints className="h-4 w-4" />}
+                                activeColor="bg-green-500"
+                            />
+                            <SmallCycleCard
+                                label="Sulten"
+                                value={hungryLevel}
+                                onClick={() => setHungryLevel(cycleHungry(hungryLevel))}
+                                icon={<Utensils className="h-4 w-4" />}
+                                activeColor={hungryLevel === "Ja" ? "bg-orange-500" : "bg-orange-600"}
+                                inactiveValue="Nei"
+                            />
+                            <SmallToggleCard
+                                label="Tørst"
+                                active={isThirsty}
+                                onClick={() => setIsThirsty(!isThirsty)}
+                                icon={<Droplets className="h-4 w-4" />}
+                                activeColor="bg-blue-500"
+                            />
+                            <SmallCycleCard
+                                label="Stresset"
+                                value={stressLevel}
+                                onClick={() => setStressLevel(cycleStress(stressLevel))}
+                                icon={<HeartPulse className="h-4 w-4" />}
+                                activeColor={stressLevel === "Litt" ? "bg-orange-400" : "bg-red-600"}
+                                inactiveValue="Nei"
+                            />
+                            <SmallCycleCard
+                                label="Søvn"
+                                value={sleepLevel}
+                                onClick={() => setSleepLevel(cycleSleep(sleepLevel))}
+                                icon="💤"
+                                activeColor={sleepLevel === "Lite" ? "bg-indigo-400" : "bg-indigo-600"}
+                                inactiveValue="Normal"
+                            />
+                        </div>
                     </div>
 
-                    {/* Cone Usage (Skjerm) */}
-                    <div className="space-y-3">
-                        <h3 className="text-sm font-medium flex items-center gap-2">
-                            🛡️ Skjerm / Krage
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                            {["Ingen", "Litt", "Mye"].map(level => (
-                                <button
-                                    key={level}
-                                    onClick={() => setConeUsage(level)}
-                                    className={cn(
-                                        "px-4 py-2 rounded-full text-sm font-medium transition-all border",
-                                        coneUsage === level
-                                            ? "bg-blue-600 text-white border-blue-600 shadow-md transform scale-105"
-                                            : "bg-background hover:bg-muted text-foreground border-input"
-                                    )}
-                                >
-                                    {level}
-                                </button>
-                            ))}
+                    {/* Category 2: Hjelpemiddel */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Hjelpemiddel</h3>
+                        <div className="grid grid-cols-3 gap-2">
+                            <SmallCycleCard
+                                label="Skjerm"
+                                value={coneUsage}
+                                onClick={() => setConeUsage(cycleLevel(coneUsage))}
+                                icon="🛡️"
+                            />
+                            <SmallCycleCard
+                                label="Sokker"
+                                value={bootUsage}
+                                onClick={() => setBootUsage(cycleLevel(bootUsage))}
+                                icon="🧦"
+                            />
+                            <SmallCycleCard
+                                label="Bur"
+                                value={cageUsage}
+                                onClick={() => setCageUsage(cycleLevel(cageUsage))}
+                                icon="🏠"
+                            />
                         </div>
+
+                        {/* 'Annet' trigger */}
+                        {!showNotes ? (
+                            <button
+                                onClick={() => setShowNotes(true)}
+                                className="w-full py-2 border-2 border-dashed border-muted rounded-xl text-xs font-bold text-muted-foreground hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                ANNET / NOTATER
+                            </button>
+                        ) : (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                <div className="flex justify-between items-center">
+                                    <label className="text-xs font-bold uppercase text-muted-foreground">Notater</label>
+                                    <button
+                                        onClick={() => {
+                                            setShowNotes(false)
+                                            if (!notes) setNotes("")
+                                        }}
+                                        className="text-[10px] font-bold text-red-500 hover:underline"
+                                    >
+                                        Skjul
+                                    </button>
+                                </div>
+                                <textarea
+                                    placeholder="Andre observasjoner..."
+                                    value={notes}
+                                    onChange={e => setNotes(e.target.value)}
+                                    autoFocus
+                                    className="flex min-h-[80px] w-full rounded-xl border-2 border-primary/20 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Stool */}
@@ -237,7 +315,6 @@ export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalPro
                         <h3 className="text-sm font-medium flex items-center gap-2">
                             <Dog className="h-4 w-4 text-red-500" /> Kløe / Irritasjon
                         </h3>
-                        <p className="text-xs text-muted-foreground">Trykk flere ganger for å øke nivå</p>
                         <div className="flex flex-wrap gap-2">
                             {ITCH_ZONES.map(zone => {
                                 const level = itchSeverity[zone] || 0
@@ -257,19 +334,10 @@ export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalPro
                             })}
                         </div>
                     </div>
+                </div>
 
-                    {/* Notes */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Notater</label>
-                        <textarea
-                            placeholder="Andre observasjoner..."
-                            value={notes}
-                            onChange={e => setNotes(e.target.value)}
-                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        />
-                    </div>
-
-                    <Button className="w-full h-12 text-lg" onClick={handleSubmit} disabled={loading}>
+                <div className="p-6 border-t bg-muted/20">
+                    <Button className="w-full h-12 text-lg shadow-lg active:scale-95 transition-all" onClick={handleSubmit} disabled={loading}>
                         {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
                         {loading ? "Lagrer..." : "Lagre Logg"}
                     </Button>
@@ -279,22 +347,37 @@ export function HealthLogModal({ dogId, trigger, onComplete }: HealthLogModalPro
     )
 }
 
-function ToggleCard({ label, active, onClick, icon, color, bgColor, activeBg }: { label: string, active: boolean, onClick: () => void, icon: React.ReactNode, color: string, bgColor: string, activeBg: string }) {
+function SmallToggleCard({ label, active, onClick, icon, activeColor }: { label: string, active: boolean, onClick: () => void, icon: React.ReactNode, activeColor: string }) {
     return (
         <button
             onClick={onClick}
             className={cn(
-                "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
-                active ? `border-transparent ${activeBg} text-white shadow-md scale-[1.02]` : `border-transparent ${bgColor} ${color} hover:opacity-80`
+                "flex flex-col items-center justify-center py-2 px-1 rounded-lg border-2 transition-all duration-200 text-center min-h-[64px]",
+                active ? `border-transparent ${activeColor} text-white shadow-sm` : "border-muted bg-background text-muted-foreground hover:border-primary/30"
             )}
         >
-            <div className={cn("mb-2 transition-transform", active && "scale-110")}>
-                {icon}
-            </div>
-            <span className="font-semibold text-sm">{label}</span>
-            <span className={cn("text-xs mt-1 font-bold uppercase", active ? "opacity-100" : "opacity-60")}>
-                {active ? "JA" : "NEI"}
-            </span>
+            <div className="mb-1">{icon}</div>
+            <span className="text-[10px] font-bold leading-tight uppercase">{label}</span>
+            <span className="text-[8px] opacity-70 mt-0.5">{active ? "JA" : "NEI"}</span>
+        </button>
+    )
+}
+
+function SmallCycleCard({ label, value, onClick, icon, activeColor, inactiveValue = "Ingen" }: { label: string, value: string, onClick: () => void, icon: string | React.ReactNode, activeColor?: string, inactiveValue?: string }) {
+    const isActive = value !== inactiveValue
+    const resolvedColor = activeColor || (value === "Litt" ? "bg-blue-400" : "bg-blue-600")
+
+    return (
+        <button
+            onClick={onClick}
+            className={cn(
+                "flex flex-col items-center justify-center py-2 px-1 rounded-lg border-2 transition-all duration-200 text-center min-h-[64px]",
+                isActive ? `border-transparent ${resolvedColor} text-white shadow-sm` : "border-muted bg-background text-muted-foreground hover:border-primary/30"
+            )}
+        >
+            <div className="text-sm mb-1">{icon}</div>
+            <span className="text-[10px] font-bold leading-tight uppercase">{label}</span>
+            <span className="text-[8px] opacity-70 mt-0.5 font-bold uppercase">{value}</span>
         </button>
     )
 }

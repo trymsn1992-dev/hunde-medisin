@@ -8,10 +8,14 @@ export async function createHealthLog(data: {
     date: string
     isPlayful: boolean
     wantsWalk: boolean
-    isHungry: boolean
+    hungryLevel: string
     isThirsty: boolean
+    stressedLevel: string
+    sleepLevel: string
     stool: string | null
     coneUsage: string
+    bootUsage: string
+    cageUsage: string
     itchLocations: string[]
     notes: string
 }) {
@@ -33,10 +37,14 @@ export async function createHealthLog(data: {
                 date: data.date,
                 is_playful: data.isPlayful,
                 wants_walk: data.wantsWalk,
-                is_hungry: data.isHungry,
+                hungry_level: data.hungryLevel,
                 is_thirsty: data.isThirsty,
+                stressed_level: data.stressedLevel,
+                sleep_level: data.sleepLevel,
                 stool: data.stool,
                 cone_usage: data.coneUsage,
+                boot_usage: data.bootUsage,
+                cage_usage: data.cageUsage,
                 itch_locations: data.itchLocations,
                 notes: data.notes
             })
