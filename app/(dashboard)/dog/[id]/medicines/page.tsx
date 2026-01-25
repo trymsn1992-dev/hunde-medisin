@@ -235,7 +235,7 @@ export default function MedicinesPage() {
                                 </div>
                                 <div className="flex items-center gap-1">
                                     {/* EDIT BUTTON */}
-                                    <EditMedicineModal medicine={med} onSuccess={fetchMeds} />
+                                    <EditMedicineModal key={JSON.stringify(med)} medicine={med} onSuccess={fetchMeds} />
 
                                     {/* PAUSE / RESUME BUTTON */}
                                     {isPaused ? (

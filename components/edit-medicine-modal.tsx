@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { updateMedicine } from "@/app/actions/medicines"
 import { Pencil, Plus, Trash2, X } from "lucide-react"
+import { MED_COLORS } from "@/lib/medicine-utils"
+import { cn } from "@/lib/utils"
 
 type EditMedicineModalProps = {
     medicine: any // Typed lazily to match page structure, ideally MedicineWithPlan
@@ -96,16 +98,23 @@ export function EditMedicineModal({ medicine, onSuccess }: EditMedicineModalProp
                         </div>
                         <div className="space-y-2">
                             <Label>Fargekode</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    type="color"
-                                    value={color}
-                                    onChange={e => setColor(e.target.value)}
-                                    className="w-12 h-10 p-1 cursor-pointer"
-                                />
-                                <div className="text-xs text-muted-foreground flex items-center">
-                                    Velg farge for ikoner
-                                </div>
+                            <div className="flex flex-wrap gap-2">
+                                {MED_COLORS.map((c) => (
+                                    <button
+                                        key={c}
+                                        type="button"
+                                        onClick={() => setColor(c)}
+                                        className={cn(
+                                            "h-8 w-8 rounded-full border-2 transition-all",
+                                            c,
+                                            color === c ? "border-foreground scale-110 shadow-sm" : "border-transparent opacity-70 hover:opacity-100"
+                                        )}
+                                        aria-label="Velg farge"
+                                    />
+                                ))}
+                            </div>
+                            <div className="text-xs text-muted-foreground flex items-center mt-1">
+                                Velg farge for ikoner
                             </div>
                         </div>
                     </div>
