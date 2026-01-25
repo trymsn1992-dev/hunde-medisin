@@ -141,6 +141,7 @@ export default function HistoryPage() {
     // Handling URL params
     useEffect(() => {
         const medId = searchParams.get("medicineId")
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (medId) setSelectedMedicine(medId)
     }, [searchParams])
     const handleDeleteClick = (logId: string) => {

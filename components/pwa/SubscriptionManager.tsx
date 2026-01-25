@@ -19,8 +19,6 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export default function SubscriptionManager() {
     const [isSubscribed, setIsSubscribed] = useState(false);
-    const [subscription, setSubscription] = useState<PushSubscription | null>(null);
-    const [permission, setPermission] = useState<NotificationPermission | 'default'>('default');
     const [loading, setLoading] = useState(false);
     const [isSupported, setIsSupported] = useState(true);
 
@@ -40,7 +38,6 @@ export default function SubscriptionManager() {
             }).then(async (sub) => {
                 if (sub) {
                     console.log('Found existing subscription, syncing...');
-                    setSubscription(sub);
                     // Sync with backend on mount
                     try {
                         const res = await fetch('/api/notifications/subscribe', {
@@ -62,7 +59,6 @@ export default function SubscriptionManager() {
             }).catch(err => {
                 console.error('SW registration failed', err);
             });
-            setPermission(Notification.permission);
         }
     }, []);
 
@@ -73,7 +69,6 @@ export default function SubscriptionManager() {
 
             // Explicitly request permission (important for iOS)
             const result = await Notification.requestPermission();
-            setPermission(result);
 
             if (result === 'denied') {
                 alert('Du har blokkert varsler. Endre dette i nettleserinnstillingene.');
@@ -108,8 +103,6 @@ export default function SubscriptionManager() {
 
             const subJSON = sub.toJSON();
             console.log('Subscription JSON:', subJSON);
-
-            setSubscription(sub);
 
             // Send subscription to backend
             const syncRes = await fetch('/api/notifications/subscribe', {
@@ -186,7 +179,6 @@ export default function SubscriptionManager() {
                                 const sub = await reg.pushManager.getSubscription();
                                 if (sub) await sub.unsubscribe();
                                 setIsSubscribed(false);
-                                setSubscription(null);
                             }
                         }}
                         className="text-[10px] text-muted-foreground hover:underline self-start"

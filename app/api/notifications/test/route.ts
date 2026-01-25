@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         });
 
         let successCount = 0;
-        let errors = [];
+        const errors = [];
 
         for (const sub of subscriptions) {
             try {

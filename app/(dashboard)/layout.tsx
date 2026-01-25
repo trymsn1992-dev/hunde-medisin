@@ -24,6 +24,7 @@ export default function DashboardLayout({
 
     useEffect(() => {
         if (!dogId) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setActiveDog(null)
             return
         }

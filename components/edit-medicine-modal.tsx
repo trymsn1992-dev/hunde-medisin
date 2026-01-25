@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { updateMedicine } from "@/app/actions/medicines"
-import { Pencil, Plus, Trash2, X } from "lucide-react"
+import { Pencil, Plus, X } from "lucide-react"
 import { MED_COLORS } from "@/lib/medicine-utils"
 import { cn } from "@/lib/utils"
 

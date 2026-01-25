@@ -12,6 +12,7 @@ export function CookieBanner() {
         // Check local storage on mount
         const consent = localStorage.getItem("cookie_consent")
         if (!consent) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setShow(true)
         }
     }, [])
