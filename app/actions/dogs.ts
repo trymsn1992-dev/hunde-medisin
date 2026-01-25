@@ -116,7 +116,7 @@ export async function deleteDog(dogId: string) {
 
     try {
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return { message: "Not authenticated" }
+        if (!user) return { success: false, error: "Not authenticated" }
 
         const { error } = await supabase
             .from("dogs")
@@ -125,15 +125,15 @@ export async function deleteDog(dogId: string) {
 
         if (error) {
             console.error("Delete dog error:", error)
-            return { message: "Failed to delete dog: " + error.message }
+            return { success: false, error: error.message }
         }
 
-    } catch (e) {
-        return { message: "Unexpected error" }
-    }
+        revalidatePath("/dashboard")
+        return { success: true }
 
-    revalidatePath("/dashboard")
-    redirect("/dashboard")
+    } catch (e: any) {
+        return { success: false, error: e.message }
+    }
 }
 
 export async function joinDogByInvite(inviteCode: string) {

@@ -105,6 +105,7 @@ export default function DogDashboardPage() {
         if (!user) return
 
         // 1. Fetch Dog Info
+        const { data: dog } = await supabase.from('dogs').select('name').eq('id', dogId).single()
         if (dog) {
             setDogName(dog.name)
         }

@@ -42,6 +42,27 @@ export default function DogProfilePage() {
     const [currentMember, setCurrentMember] = useState<any>(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+        router.push("/login")
+        router.refresh()
+    }
+
+    const handleDeleteDog = async () => {
+        try {
+            const res = await deleteDog(dogId)
+            if (res.success) {
+                router.push("/dashboard")
+                router.refresh()
+            } else {
+                alert("Feil ved sletting: " + res.error)
+            }
+        } catch (err) {
+            console.error(err)
+            alert("En uventet feil oppsto")
+        }
+    }
+
     useEffect(() => {
         const fetchDog = async () => {
             const { data: { user } } = await supabase.auth.getUser()
