@@ -18,6 +18,10 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export default function SubscriptionManager() {
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [subscription, setSubscription] = useState<PushSubscription | null>(null);
+    const [permission, setPermission] = useState<NotificationPermission | 'default'>('default');
+    const [loading, setLoading] = useState(false);
     const [isSupported, setIsSupported] = useState(true);
 
     useEffect(() => {

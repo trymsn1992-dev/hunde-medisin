@@ -24,6 +24,8 @@ export default function DashboardPage() {
     const supabase = createClient()
     const router = useRouter()
 
+    const [isPricingOpen, setIsPricingOpen] = useState(false); // Added state
+
     useEffect(() => {
         const fetchData = async () => {
             const { data: { user } } = await supabase.auth.getUser()
@@ -61,11 +63,19 @@ export default function DashboardPage() {
 
     const handleManageSubscription = async () => {
         try {
-            const response = await axios.post('/api/stripe/portal');
-            window.location.href = response.data.url;
+            const res = await fetch('/api/stripe/portal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert("Kunne ikke åpne portalen: " + (data.error || "Ukjent feil"));
+            }
         } catch (error) {
             console.error('Billed Portal Error', error);
-            toast.error('Noe gikk galt.');
+            alert('Noe gikk galt.');
         }
     };
 
@@ -81,10 +91,11 @@ export default function DashboardPage() {
         }
     }
 
-    const isSubscribed = subscriptionStatus === 'active' || subscriptionStatus === 'pending' || subscriptionStatus === 'trialing'; // Renamed from isPro to isSubscribed
+    const isSubscribed = subscriptionStatus === 'active' || subscriptionStatus === 'pending' || subscriptionStatus === 'trialing';
 
     return (
         <div className="space-y-6">
+            <PricingModal open={isPricingOpen} onOpenChange={setIsPricingOpen} />
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
                     Mine Hunder

@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
 
 // Note: We need a Service Role client here to update any user's profile
 // without a user session.
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
 
                 if (userId) {
                     // Retrieve subscription details to get end date
-                    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+                    const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
 
                     await supabaseAdmin
                         .from('profiles')
@@ -45,14 +46,14 @@ export async function POST(req: Request) {
                             stripe_customer_id: customerId,
                             subscription_status: subscription.status,
                             subscription_price_id: subscription.items.data[0].price.id,
-                            subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+                            subscription_end_date: new Date((subscription as any).current_period_end * 1000).toISOString(),
                         })
                         .eq('id', userId);
                 }
                 break;
             }
             case 'customer.subscription.updated': {
-                const subscription = session;
+                const subscription = session as any;
                 const customerId = subscription.customer;
 
                 await supabaseAdmin
