@@ -156,11 +156,6 @@ export default function MedicinesPage() {
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/dog/${dogId}`}><ArrowLeft className="h-5 w-5" /></Link>
-                    </Button>
-                </div>
                 <Button asChild>
                     <Link href={`/dog/${dogId}/medicines/new`}>
                         <Plus className="mr-2 h-4 w-4" /> Legg til medisin
