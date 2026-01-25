@@ -394,7 +394,7 @@ export default function DogDashboardPage() {
         >
 
             {/* Date Navigation Header */}
-            <div className="flex flex-col gap-2 sticky top-14 z-40 md:static md:mt-0 animate-in fade-in slide-in-from-top-4 bg-background pb-2">
+            <div className="flex flex-col gap-2 sticky top-14 z-40 md:static md:mt-0 animate-in fade-in slide-in-from-top-4 bg-background pb-6">
 
                 <div className="flex items-center justify-between gap-2 py-2">
                     {/* HealthLogModal moved to FAB */}
