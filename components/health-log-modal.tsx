@@ -6,7 +6,7 @@ import { createHealthLog } from "@/app/actions/health"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Activity, Footprints, Utensils, Droplets, Dog, Save, Heart, Loader2, HeartPulse, Plus } from "lucide-react"
+import { Activity, Footprints, Utensils, Droplets, Dog, Save, Heart, Loader2, HeartPulse, Plus, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const STOOL_TYPES = ["Normal", "Ingen", "Hard", "Bløt", "Rød", "Mørk"]
@@ -142,9 +142,9 @@ export function HealthLogModal({ dogId, dogName, trigger, onComplete }: HealthLo
             setItchSeverity({})
             setNotes("")
 
-        } catch (err) {
-            alert("Feil ved lagring")
+        } catch (err: any) {
             console.error(err)
+            alert("Feil ved lagring: " + (err.message || "Ukjent feil"))
         } finally {
             setLoading(false)
         }

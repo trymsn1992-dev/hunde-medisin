@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, Clock, CheckCircle, Pill, CalendarDays, Load
 import { cn } from "@/lib/utils"
 import { deleteDog } from "@/app/actions/dogs"
 import { MedicineBadge } from "@/components/medicine-badge"
+import { getMedicineColor, getSoftColor } from "@/lib/medicine-utils"
 import { HealthLogModal } from "@/components/health-log-modal"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -29,6 +30,8 @@ type DoseEvent = {
     medicineId: string
     dogId: string
     medicineName: string
+    medicineColor?: string
+    medicineNotes?: string
     doseText: string
     scheduledTime: string // HH:MM
     status: 'due' | 'upcoming' | 'overdue' | 'taken'
@@ -123,7 +126,7 @@ export default function DogDashboardPage() {
              medicine_id,
              dose_text,
              schedule_times,
-             medicine:medicines (name, strength)
+             medicine:medicines (name, strength, color, notes)
            `)
                 .in('medicine_id', medicineIds)
                 .eq('active', true)
@@ -216,6 +219,8 @@ export default function DogDashboardPage() {
                         medicineId: p.medicine_id,
                         dogId: dogId,
                         medicineName: p.medicine.name,
+                        medicineColor: p.medicine.color,
+                        medicineNotes: p.medicine.notes,
                         doseText: p.dose_text,
                         scheduledTime: t,
                         status,
@@ -369,13 +374,13 @@ export default function DogDashboardPage() {
             x: 0,
             opacity: 1,
             scale: 1,
-            transition: { duration: 0.3, ease: "easeOut" as const } // Slower duration
+            transition: { duration: 0.15, ease: "easeOut" as const }
         },
         exit: (direction: number) => ({
-            x: direction > 0 ? -100 : 100, // Increased distance
+            x: direction > 0 ? -100 : 100,
             opacity: 0,
             scale: 0.95,
-            transition: { duration: 0.2, ease: "easeIn" as const }
+            transition: { duration: 0.1, ease: "easeIn" as const }
         })
     }
 
@@ -442,61 +447,71 @@ export default function DogDashboardPage() {
                                 const doseKey = `${dose.planId}-${dose.scheduledTime}`
                                 const isProcessing = processingDoseKey === doseKey
                                 const isTaken = dose.status === 'taken'
+                                const baseColor = getMedicineColor(dose.medicineId, dose.medicineColor)
+                                const softStyle = getSoftColor(baseColor)
 
                                 return (
-                                    <Card key={i} className={cn(
-                                        "transition-all border-l-4 w-full overflow-hidden",
-                                        isTaken && "opacity-75 border-l-muted-foreground/30 bg-muted/30",
-                                        !isTaken && dose.status === 'due' && "border-l-emerald-500 border-emerald-500/20 shadow-sm",
-                                        !isTaken && dose.status === 'overdue' && "border-l-red-500 border-red-500/20 bg-red-500/5",
-                                        !isTaken && dose.status === 'upcoming' && "border-l-blue-400/50"
-                                    )}>
-                                        <div className="flex items-center p-3 gap-3">
-                                            {/* Left side: Time and Status */}
-                                            <div className="flex flex-col items-center justify-center min-w-[50px] border-r pr-3">
-                                                <span className="text-sm font-bold">{dose.scheduledTime}</span>
-                                                {isTaken && <CheckCircle className="h-4 w-4 text-emerald-500 mt-1" />}
-                                            </div>
+                                    <div key={i} className="flex gap-4 items-start relative">
+                                        {/* Left side: Time OUTSIDE card */}
+                                        <div className="flex flex-col items-center pt-4 min-w-[50px]">
+                                            <span className="text-sm font-bold text-muted-foreground">{dose.scheduledTime}</span>
+                                            {isTaken && (
+                                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                                                    <CheckCircle className="h-4 w-4 text-emerald-500 mt-1" />
+                                                </motion.div>
+                                            )}
+                                        </div>
 
-                                            {/* Middle side: Medicine Info */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                    <span className="font-semibold text-sm truncate">{dose.medicineName}</span>
-                                                    <span className="text-xs text-muted-foreground">{dose.doseText}</span>
+                                        <Card className={cn(
+                                            "transition-all border-l-4 flex-1 overflow-hidden shadow-sm",
+                                            isTaken ? "opacity-75 grayscale-[0.5] border-l-muted" : softStyle,
+                                            !isTaken && dose.status === 'overdue' && "border-l-red-500 ring-1 ring-red-500/20"
+                                        )}>
+                                            <div className="flex items-center p-3 gap-3">
+                                                {/* Middle side: Medicine Info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-base truncate">{dose.medicineName}</span>
+                                                        {dose.medicineNotes && (
+                                                            <span className="text-xs opacity-80 font-medium truncate italic">{dose.medicineNotes}</span>
+                                                        )}
+                                                        <div className="flex items-center gap-1.5 mt-1">
+                                                            <Pill className="h-3 w-3 opacity-60" />
+                                                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">{dose.doseText}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Right side: Action */}
+                                                <div className="shrink-0">
+                                                    {!isTaken ? (
+                                                        <Button
+                                                            onClick={() => toggleDose(dose)}
+                                                            disabled={isProcessing || (!dose.isToday && currentDate > new Date())}
+                                                            size="sm"
+                                                            className={cn(
+                                                                "h-9 px-4 font-bold text-xs transition-all shadow-md active:scale-95",
+                                                                dose.status === 'upcoming' ? "bg-background text-foreground border border-input hover:bg-muted" : "bg-primary text-primary-foreground hover:bg-primary/90",
+                                                                (!dose.isToday && currentDate > new Date()) && "opacity-50 cursor-not-allowed"
+                                                            )}
+                                                        >
+                                                            {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : "Gi dose"}
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            onClick={() => toggleDose(dose)}
+                                                            disabled={isProcessing}
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-9 px-3 text-muted-foreground hover:text-red-500 font-bold text-xs"
+                                                        >
+                                                            {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : "Angre"}
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </div>
-
-                                            {/* Right side: Action */}
-                                            <div className="shrink-0">
-                                                {!isTaken ? (
-                                                    <Button
-                                                        onClick={() => toggleDose(dose)}
-                                                        disabled={isProcessing || (!dose.isToday && currentDate > new Date())}
-                                                        size="sm"
-                                                        className={cn(
-                                                            "h-9 px-4 font-bold text-xs transition-all",
-                                                            dose.status === 'due' && "bg-emerald-600 hover:bg-emerald-700 text-white",
-                                                            dose.status === 'overdue' && "bg-red-600 hover:bg-red-700 text-white",
-                                                            dose.status === 'upcoming' && "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                                                            (!dose.isToday && currentDate > new Date()) && "opacity-50 cursor-not-allowed"
-                                                        )}
-                                                    >
-                                                        {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : "Gi dose"}
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        onClick={() => toggleDose(dose)}
-                                                        disabled={isProcessing}
-                                                        size="icon"
-                                                        variant="ghost"
-                                                        className="h-9 w-9 text-muted-foreground hover:text-red-500"
-                                                    >
-                                                        {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <div className="text-[10px] font-bold">Angre</div>}
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </Card>
+                                        </Card>
+                                    </div>
                                 )
                             })
                         )}
