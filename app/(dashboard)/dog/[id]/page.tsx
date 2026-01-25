@@ -473,20 +473,26 @@ export default function DogDashboardPage() {
                                             !isTaken && dose.status === 'overdue' && "border-red-500 ring-1 ring-red-500/20"
                                         )}>
                                             <div className="flex items-center p-3 gap-3">
-                                                {/* Icon Column (Dose Amount) */}
-                                                <div className="shrink-0 flex items-center justify-center min-w-[40px]">
-                                                    <DoseIcon doseText={dose.doseText} className="text-current opacity-80" itemClassName="h-6 w-6" />
-                                                </div>
-
-                                                {/* Middle side: Medicine Info */}
-                                                <div className="flex-1 min-w-0 pr-2">
-                                                    <div className="flex flex-col">
-                                                        <span className="font-bold text-base leading-tight break-words">{dose.medicineName}</span>
-                                                        <span className="text-xs font-bold uppercase tracking-wider opacity-90 mt-1">{dose.doseText}</span>
+                                                {/* Clickable Area: Icon and Info */}
+                                                <Link
+                                                    href={`/dog/${dogId}/history?medicineId=${dose.medicineId}`}
+                                                    className="flex-1 flex items-center gap-3 min-w-0"
+                                                >
+                                                    {/* Icon Column (Dose Amount) */}
+                                                    <div className="shrink-0 flex items-center justify-center min-w-[40px]">
+                                                        <DoseIcon doseText={dose.doseText} className="text-current opacity-80" itemClassName="h-6 w-6" />
                                                     </div>
-                                                </div>
 
-                                                {/* Right side: Action */}
+                                                    {/* Middle side: Medicine Info */}
+                                                    <div className="flex-1 min-w-0 pr-2">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-bold text-base leading-tight break-words">{dose.medicineName}</span>
+                                                            <span className="text-xs font-bold uppercase tracking-wider opacity-90 mt-1">{dose.doseText}</span>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+
+                                                {/* Right side: Action (Kept outside Link) */}
                                                 <div className="shrink-0">
                                                     {!isTaken ? (
                                                         <Button
