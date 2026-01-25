@@ -61,38 +61,62 @@ export default function DashboardPage() {
 
     const handleManageSubscription = async () => {
         try {
-            const res = await fetch('/api/stripe/portal', { method: 'POST' });
-            const data = await res.json();
-            if (data.url) window.location.href = data.url;
-        } catch (e) {
-            console.error(e);
+            const response = await axios.post('/api/stripe/portal');
+            window.location.href = response.data.url;
+        } catch (error) {
+            console.error('Billed Portal Error', error);
+            toast.error('Noe gikk galt.');
         }
-    }
+    };
 
     if (loading) {
         return <div className="flex items-center justify-center h-64">Laster...</div>
     }
 
-    const isPro = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+    // Check query params for Vipps return
+    if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('vipps') === 'processing') {
+            // Maybe show a toast or banner?
+        }
+    }
+
+    const isSubscribed = subscriptionStatus === 'active' || subscriptionStatus === 'pending' || subscriptionStatus === 'trialing'; // Renamed from isPro to isSubscribed
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <h1 className="text-3xl font-bold tracking-tight">Dine hunder</h1>
-                <div className="flex items-center gap-2">
-                    {isPro ? (
-                        <Button variant="outline" onClick={handleManageSubscription}>
-                            Administrer abonnement
-                        </Button>
-                    ) : (
-                        <PricingModal email={userEmail} />
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                    Mine Hunder
+                    {isSubscribed && (
+                        <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full font-medium border border-emerald-200">
+                            Premium
+                        </span>
                     )}
-                    <Button asChild size="sm">
-                        <Link href="/new-dog">
-                            <Plus className="mr-2 h-4 w-4" /> Legg til hund
-                        </Link>
+                </h1>
+                {!isSubscribed ? (
+                    <Button
+                        onClick={() => setIsPricingOpen(true)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                    >
+                        Oppgrader til Premium
                     </Button>
-                </div>
+                ) : (
+                    <Button
+                        variant="outline"
+                        onClick={handleManageSubscription}
+                        className="text-zinc-600 border-zinc-200 hover:bg-zinc-50"
+                    >
+                        Administrer abonnement
+                    </Button>
+                )}
+            </div>
+            <div className="flex items-center gap-2">
+                <Button asChild size="sm">
+                    <Link href="/new-dog">
+                        <Plus className="mr-2 h-4 w-4" /> Legg til hund
+                    </Link>
+                </Button>
             </div>
 
             {dogs.length === 0 ? (

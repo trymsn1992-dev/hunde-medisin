@@ -13,7 +13,6 @@ export async function POST(req: NextRequest) {
             return new NextResponse('Unauthorized', { status: 401 });
         }
 
-        // Get the user's stripe_customer_id from profiles
         const { data: profile } = await supabase
             .from('profiles')
             .select('stripe_customer_id')
@@ -21,7 +20,7 @@ export async function POST(req: NextRequest) {
             .single();
 
         if (!profile?.stripe_customer_id) {
-            return new NextResponse('No Stripe Customer found', { status: 404 });
+            return new NextResponse('No Stripe Customer ID found', { status: 404 });
         }
 
         const session = await stripe.billingPortal.sessions.create({

@@ -45,15 +45,13 @@ export async function POST(req: Request) {
                             stripe_customer_id: customerId,
                             subscription_status: subscription.status,
                             subscription_price_id: subscription.items.data[0].price.id,
-                            subscription_end_date: new Date((subscription as any).current_period_end * 1000).toISOString(),
+                            subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
                         })
                         .eq('id', userId);
                 }
                 break;
             }
             case 'customer.subscription.updated': {
-                // Find user by stripe_customer_id since metadata might not be present on subscription update events
-                // (though we try to keep it synced, searching by customer_id is safer)
                 const subscription = session;
                 const customerId = subscription.customer;
 
@@ -62,7 +60,7 @@ export async function POST(req: Request) {
                     .update({
                         subscription_status: subscription.status,
                         subscription_price_id: subscription.items.data[0].price.id,
-                        subscription_end_date: new Date((subscription as any).current_period_end * 1000).toISOString(),
+                        subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
                     })
                     .eq('stripe_customer_id', customerId);
                 break;
@@ -86,5 +84,5 @@ export async function POST(req: Request) {
         return new NextResponse('Webhook handler failed', { status: 500 });
     }
 
-    return new NextResponse(null, { status: 200 });
+    return new NextResponse('Webhook Received', { status: 200 });
 }
