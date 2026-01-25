@@ -32,7 +32,7 @@ export function HealthLogModal({ dogId, dogName, trigger, onComplete }: HealthLo
     // States
     const [isPlayful, setIsPlayful] = useState<boolean>(true)
     const [wantsWalk, setWantsWalk] = useState<boolean>(true)
-    const [hungryLevel, setHungryLevel] = useState<string>("Ja")
+    const [hungryLevel, setHungryLevel] = useState<string>("Litt")
     const [isThirsty, setIsThirsty] = useState<boolean>(true)
     const [stressLevel, setStressLevel] = useState<string>("Nei")
     const [sleepLevel, setSleepLevel] = useState<string>("Normal")
