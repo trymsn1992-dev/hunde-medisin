@@ -12,31 +12,21 @@ export async function POST(req: NextRequest) {
     try {
         const subscription = await req.json();
 
-        // Check if subscription already exists
-        const { data: existing } = await supabase
-            .from('push_subscriptions')
-            .select('id')
-            .eq('endpoint', subscription.endpoint)
-            .single();
-
-        if (existing) {
-            // Setup successful, already exists
-            return NextResponse.json({ message: 'Already subscribed' });
-        }
-
-        const { error } = await supabase.from('push_subscriptions').insert({
+        // Use upsert to handle duplicates (e.g. same device, different user or re-install)
+        // onConflict: 'endpoint' ensures we just update the user_id/keys if it exists.
+        const { error } = await supabase.from('push_subscriptions').upsert({
             user_id: user.id,
             endpoint: subscription.endpoint,
             p256dh: subscription.keys.p256dh,
             auth: subscription.keys.auth,
-        });
+        }, { onConflict: 'endpoint' });
 
         if (error) {
             console.error('STRICT ERROR saving subscription to Supabase:', error);
             return NextResponse.json({ error: 'Database-feil: ' + error.message }, { status: 500 });
         }
 
-        console.log('New subscription saved successfully for user:', user.id);
+        console.log('Subscription upserted successfully for user:', user.id);
         return NextResponse.json({ message: 'Subscribed successfully' });
     } catch (err) {
         console.error('Error in subscribe route:', err);
