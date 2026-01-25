@@ -308,11 +308,6 @@ export default function HistoryPage() {
     return (
         <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col max-w-5xl mx-auto">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/dog/${dogId}`}><ArrowLeft className="h-5 w-5" /></Link>
-                    </Button>
-                </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <select
