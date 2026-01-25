@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { deleteDog } from "@/app/actions/dogs"
 import { MedicineBadge } from "@/components/medicine-badge"
 import { getMedicineColor, getSoftColor } from "@/lib/medicine-utils"
+import { DoseIcon } from "@/components/dose-icon"
 import { HealthLogModal } from "@/components/health-log-modal"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -451,23 +452,31 @@ export default function DogDashboardPage() {
                                 const softStyle = getSoftColor(baseColor)
 
                                 return (
-                                    <div key={i} className="flex gap-4 items-start relative">
-                                        {/* Left side: Time OUTSIDE card */}
-                                        <div className="flex flex-col items-center pt-4 min-w-[50px]">
-                                            <span className="text-sm font-bold text-muted-foreground">{dose.scheduledTime}</span>
-                                            {isTaken && (
-                                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                                                    <CheckCircle className="h-4 w-4 text-emerald-500 mt-1" />
-                                                </motion.div>
-                                            )}
+                                    <div key={i} className="ml-4 pl-6 relative border-l-2 border-muted pb-6 last:pb-0 last:border-l-0">
+                                        {/* Timeline Dot */}
+                                        <div className={cn(
+                                            "absolute -left-[9px] top-1 h-4 w-4 rounded-full border-2 bg-background transition-colors z-10",
+                                            isTaken ? "border-emerald-500 bg-emerald-500" : (dose.status === 'overdue' ? "border-red-500" : "border-primary")
+                                        )}>
+                                            {isTaken && <CheckCircle className="h-3 w-3 text-white m-[0.5px]" />}
+                                        </div>
+
+                                        {/* Time Header (Above Card) */}
+                                        <div className="flex items-center gap-2 mb-2 -mt-1">
+                                            <span className="text-sm font-bold text-muted-foreground font-mono">{dose.scheduledTime}</span>
                                         </div>
 
                                         <Card className={cn(
-                                            "transition-all border-l-4 flex-1 overflow-hidden shadow-sm",
-                                            isTaken ? "opacity-75 grayscale-[0.5] border-l-muted" : softStyle,
-                                            !isTaken && dose.status === 'overdue' && "border-l-red-500 ring-1 ring-red-500/20"
+                                            "transition-all overflow-hidden shadow-sm border",
+                                            isTaken ? "opacity-75 grayscale-[0.5] bg-muted/30" : softStyle,
+                                            !isTaken && dose.status === 'overdue' && "border-red-500 ring-1 ring-red-500/20"
                                         )}>
                                             <div className="flex items-center p-3 gap-3">
+                                                {/* Icon Column (Dose Amount) */}
+                                                <div className="shrink-0 flex items-center justify-center min-w-[40px]">
+                                                    <DoseIcon doseText={dose.doseText} className="text-current opacity-80" itemClassName="h-6 w-6" />
+                                                </div>
+
                                                 {/* Middle side: Medicine Info */}
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex flex-col">
@@ -475,10 +484,7 @@ export default function DogDashboardPage() {
                                                         {dose.medicineNotes && (
                                                             <span className="text-xs opacity-80 font-medium truncate italic">{dose.medicineNotes}</span>
                                                         )}
-                                                        <div className="flex items-center gap-1.5 mt-1">
-                                                            <Pill className="h-3 w-3 opacity-60" />
-                                                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">{dose.doseText}</span>
-                                                        </div>
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-70 mt-1">{dose.doseText}</span>
                                                     </div>
                                                 </div>
 
