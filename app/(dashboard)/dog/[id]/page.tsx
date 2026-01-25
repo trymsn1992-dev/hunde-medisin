@@ -482,7 +482,7 @@ export default function DogDashboardPage() {
                                                 <div className="flex-1 min-w-0 pr-2">
                                                     <div className="flex flex-col">
                                                         <span className="font-bold text-base leading-tight break-words">{dose.medicineName}</span>
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-70 mt-2">{dose.doseText}</span>
+                                                        <span className="text-xs font-bold uppercase tracking-wider opacity-90 mt-1">{dose.doseText}</span>
                                                     </div>
                                                 </div>
 
