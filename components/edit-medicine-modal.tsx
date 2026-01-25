@@ -149,7 +149,7 @@ export function EditMedicineModal({ medicine, onSuccess }: EditMedicineModalProp
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Notater</Label>
+                        <Label>Beskrivelse</Label>
                         <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Instruksjoner..." />
                     </div>
                 </div>

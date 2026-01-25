@@ -292,7 +292,7 @@ export default function ManualEntryPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Notater</label>
+                                <label className="text-sm font-medium">Beskrivelse</label>
                                 <Input placeholder="f.eks. Gi med mat" value={notes} onChange={e => setNotes(e.target.value)} />
                             </div>
                         </div>
