@@ -33,7 +33,7 @@ import {
     isSameDay,
     isToday
 } from "date-fns"
-import { getMedicineColor } from "@/lib/medicine-utils"
+import { getMedicineColor, getSoftColor } from "@/lib/medicine-utils"
 import { MedicineBadge } from "@/components/medicine-badge"
 import { getHealthLogs, deleteHealthLog } from "@/app/actions/health"
 
@@ -582,7 +582,6 @@ export default function HistoryPage() {
                                 }
 
                                 // Find Plan to get dose_text
-                                // We need to search in medicines state
                                 const med = medicines.find(m => m.id === medId)
                                 const plan = med?.plans?.find((p: any) => p.id === log.plan_id)
                                 const amount = parseAmount(plan?.dose_text || "1")
@@ -595,15 +594,15 @@ export default function HistoryPage() {
                                     key={dateKey}
                                     onClick={() => setSelectedDate(date)}
                                     className={cn(
-                                        "bg-background p-1 flex flex-col relative transition-all duration-200 cursor-pointer hover:bg-accent/40 min-h-[80px] sm:min-h-[100px] group",
+                                        "bg-background p-0.5 sm:p-1 flex flex-col relative transition-all duration-200 cursor-pointer hover:bg-accent/40 min-h-[70px] sm:min-h-[90px] group",
                                         !isCurrentMonth && "bg-muted/5 opacity-50",
                                         isSelected && "ring-2 ring-primary ring-inset z-10 bg-primary/5 shadow-md"
                                     )}
                                 >
-                                    <div className="flex justify-between items-start mb-1">
+                                    <div className="flex justify-between items-start mb-0.5 px-0.5">
                                         {/* Date Number */}
                                         <div className={cn(
-                                            "text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full transition-transform group-hover:scale-110",
+                                            "text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full transition-transform group-hover:scale-110",
                                             isToday(date) ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
                                         )}>
                                             {format(date, 'd')}
@@ -618,19 +617,21 @@ export default function HistoryPage() {
                                     </div>
 
                                     {/* Aggregated Events List */}
-                                    <div className="flex-1 flex flex-col gap-0.5 overflow-hidden">
-                                        {Object.values(aggregates).map((agg) => (
-                                            <div
-                                                key={agg.name}
-                                                className={cn(
-                                                    "px-1 rounded-[2px] text-[9px] font-bold truncate leading-tight",
-                                                    agg.color,
-                                                    "bg-opacity-20 text-foreground dark:bg-opacity-30"
-                                                )}
-                                            >
-                                                {Number.isInteger(agg.count) ? agg.count : agg.count.toFixed(1)} x {abbreviate(agg.name)}
-                                            </div>
-                                        ))}
+                                    <div className="flex-1 flex flex-col gap-0.5 overflow-hidden px-0.5">
+                                        {Object.values(aggregates).map((agg) => {
+                                            const softColor = getSoftColor(agg.color)
+                                            return (
+                                                <div
+                                                    key={agg.name}
+                                                    className={cn(
+                                                        "px-1 py-[1px] rounded-[3px] text-[8px] sm:text-[9px] font-bold truncate leading-tight border",
+                                                        softColor
+                                                    )}
+                                                >
+                                                    {Number.isInteger(agg.count) ? agg.count : agg.count.toFixed(1)} {abbreviate(agg.name)}
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             )
