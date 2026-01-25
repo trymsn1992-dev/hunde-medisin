@@ -166,15 +166,25 @@ export function HealthLogModal({ dogId, dogName, trigger, onComplete }: HealthLo
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {/* Date */}
-                    <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium">Dato</label>
-                        <input
-                            type="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className="w-full p-2 rounded-md border bg-background"
-                        />
+                    {/* Date - Minimalistic */}
+                    <div className="flex items-center justify-between bg-muted/30 p-3 rounded-xl border border-muted-foreground/10">
+                        <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-semibold">
+                                {date === new Date().toISOString().split('T')[0] ? "I dag" : date}
+                            </span>
+                        </div>
+                        <div className="relative">
+                            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-primary hover:bg-primary/10 transition-colors">
+                                Endre
+                            </Button>
+                            <input
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
+                        </div>
                     </div>
 
                     {/* Category 1: Helse */}
