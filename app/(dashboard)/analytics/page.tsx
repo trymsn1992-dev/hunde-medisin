@@ -1,10 +1,19 @@
 import { getGlobalStats, getLast30DaysActivity } from "@/app/actions/analytics"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Dog, Pill, Activity } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
 export const dynamic = 'force-dynamic'
 
 export default async function AnalyticsPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || user.email !== 'trymsn1992@gmail.com') {
+        redirect('/dashboard')
+    }
+
     const stats = await getGlobalStats()
     const activityData = await getLast30DaysActivity()
 
