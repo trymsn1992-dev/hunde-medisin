@@ -1,6 +1,4 @@
 'use client';
-
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -11,9 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Check } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { loadStripe } from '@stripe/stripe-js';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface PricingModalProps {
     open: boolean;
@@ -21,29 +16,8 @@ interface PricingModalProps {
 }
 
 export function PricingModal({ open, onOpenChange }: PricingModalProps) {
-    const [loading, setLoading] = useState<'MONTH' | 'YEAR' | null>(null);
-
     const handleCheckout = async (interval: 'MONTH' | 'YEAR') => {
-        setLoading(interval);
-        try {
-            const res = await fetch('/api/stripe/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ interval })
-            });
-            const data = await res.json();
-            if (data.sessionId) {
-                const stripe = await stripePromise;
-                await (stripe as any)?.redirectToCheckout({ sessionId: data.sessionId });
-            } else {
-                alert("Feil ved oppstart av betaling");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Noe gikk galt");
-        } finally {
-            setLoading(null);
-        }
+        alert("Betaling med Vipps kommer snart!");
     };
 
     return (
@@ -71,8 +45,8 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
                             </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" variant="outline" disabled={loading === 'MONTH'}>
-                                {loading === 'MONTH' ? 'Laster...' : 'Velg Månedlig'}
+                            <Button className="w-full" variant="outline">
+                                Velg Månedlig
                             </Button>
                         </CardFooter>
                     </Card>
@@ -95,8 +69,8 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
                             </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" disabled={loading === 'YEAR'}>
-                                {loading === 'YEAR' ? 'Laster...' : 'Velg Årlig'}
+                            <Button className="w-full">
+                                Velg Årlig
                             </Button>
                         </CardFooter>
                     </Card>
