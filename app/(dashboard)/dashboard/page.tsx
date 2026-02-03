@@ -61,23 +61,7 @@ export default function DashboardPage() {
         fetchData()
     }, [router, supabase])
 
-    const handleManageSubscription = async () => {
-        try {
-            const res = await fetch('/api/stripe/portal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            });
-            const data = await res.json();
-            if (data.url) {
-                window.location.href = data.url;
-            } else {
-                alert("Kunne ikke åpne portalen: " + (data.error || "Ukjent feil"));
-            }
-        } catch (error) {
-            console.error('Billed Portal Error', error);
-            alert('Noe gikk galt.');
-        }
-    };
+
 
     if (loading) {
         return <div className="flex items-center justify-center h-64">Laster...</div>
@@ -99,26 +83,14 @@ export default function DashboardPage() {
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-2xl font-bold flex items-center gap-2">
                     Mine Hunder
-                    {isSubscribed && (
-                        <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full font-medium border border-emerald-200">
-                            Premium
-                        </span>
-                    )}
+
                 </h1>
-                {!isSubscribed ? (
+                {!isSubscribed && (
                     <Button
                         onClick={() => setIsPricingOpen(true)}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                     >
                         Oppgrader til Premium
-                    </Button>
-                ) : (
-                    <Button
-                        variant="outline"
-                        onClick={handleManageSubscription}
-                        className="text-zinc-600 border-zinc-200 hover:bg-zinc-50"
-                    >
-                        Administrer abonnement
                     </Button>
                 )}
             </div>
