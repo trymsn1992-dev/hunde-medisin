@@ -339,6 +339,79 @@ export default function DogDashboardPage() {
         executeDoseToggle(dose)
     }
 
+    const handleGiveAll = async () => {
+        const untaken = doses.filter(d => d.status !== 'taken');
+        if (untaken.length === 0) return;
+
+        const isToday = new Date().toDateString() === currentDate.toDateString();
+        const isPast = currentDate < new Date() && !isToday;
+
+        if (!isToday && !isPast) {
+            alert("Du kan ikke loggføre doser frem i tid.");
+            return;
+        }
+
+        if (!confirm(`Vil du markere alle ${untaken.length} doser som gitt?`)) return;
+
+        setLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const inserts = untaken.map(dose => {
+                let takenAt = new Date().toISOString();
+                // If past date, adhere to scheduled time to be precise "back in time"
+                if (isPast) {
+                    const [hours, minutes] = dose.scheduledTime.split(':').map(Number);
+                    const date = new Date(currentDate);
+                    date.setHours(hours, minutes, 0, 0);
+                    takenAt = date.toISOString();
+                }
+
+                return {
+                    plan_id: dose.planId,
+                    medicine_id: dose.medicineId,
+                    dog_id: dose.dogId,
+                    taken_by: user.id,
+                    taken_at: takenAt,
+                    status: 'taken',
+                    notes: isPast ? 'Logget tilbake i tid (Batch)' : 'Markert alle fra dashboard'
+                };
+            });
+
+            const { error } = await supabase.from("dose_logs").insert(inserts);
+            if (error) throw error;
+
+            // Trigger notifications (just one generic or per med? Let's do a smart loop to avoid spam but notify logic usually expects one)
+            // Ideally backend handles this, but here we do frontend triggers. 
+            // Let's just trigger for the first one or fire and forget loop
+            untaken.forEach(dose => {
+                fetch('/api/notifications/notify-taken', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        dogId: dose.dogId,
+                        medicineName: dose.medicineName,
+                        status: 'taken'
+                    }),
+                    headers: { 'Content-Type': 'application/json' }
+                }).catch(err => console.error("Notification trigger failed:", err))
+            });
+
+            // Haptic
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                try { navigator.vibrate([100, 50, 100]); } catch { /* ignore */ }
+            }
+
+            await fetchData();
+
+        } catch (error) {
+            console.error("Batch toggle failed:", error);
+            alert("Noe gikk galt under lagring.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
 
     const changeDate = (days: number) => {
@@ -527,6 +600,24 @@ export default function DogDashboardPage() {
                         )}
                     </motion.div>
                 </AnimatePresence>
+
+                {doses.some(d => d.status !== 'taken') &&
+                    (currentDate <= new Date() || currentDate.toDateString() === new Date().toDateString()) && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="px-4 py-6"
+                        >
+                            <Button
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 shadow-lg active:scale-95 transition-all text-lg rounded-xl flex items-center justify-center gap-2"
+                                onClick={handleGiveAll}
+                                disabled={loading}
+                            >
+                                <CheckCircle className="h-6 w-6" />
+                                Gi alle ({doses.filter(d => d.status !== 'taken').length})
+                            </Button>
+                        </motion.div>
+                    )}
             </div>
 
 
