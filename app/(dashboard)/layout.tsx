@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { HealthLogModal } from "@/components/health-log-modal"
 import { useRouter, useParams, usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { BetaBanner } from "@/components/beta-banner"
 
 export default function DashboardLayout({
     children,
@@ -168,6 +169,9 @@ export default function DashboardLayout({
                 </header>
 
                 <main className="flex-1 container px-4 pt-14 pb-8 md:pt-8 md:p-8 w-full max-w-7xl mx-auto transition-all duration-300">
+                    <div className="mb-6">
+                        <BetaBanner />
+                    </div>
                     {children}
                 </main>
 
