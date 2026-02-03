@@ -1,9 +1,9 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export async function getGlobalStats() {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     try {
         // 1. Total Users
@@ -46,7 +46,7 @@ export async function getGlobalStats() {
 }
 
 export async function getLast30DaysActivity() {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     // Calculate date 30 days ago
     const date = new Date()
