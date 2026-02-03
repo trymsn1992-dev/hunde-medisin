@@ -1,0 +1,212 @@
+
+> chrono-ring@0.1.0 lint
+> eslint
+
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(auth)/login/page.tsx
+  55:18  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(auth)/signup/page.tsx
+  62:18  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/analytics/page.tsx
+  72:49  warning  'i' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/dashboard/page.tsx
+  23:12  warning  'userEmail' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/dog/[id]/health/page.tsx
+  2:33  warning  'Activity' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/dog/[id]/history/page.tsx
+    5:8    warning  'Link' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+    8:10   warning  'ArrowLeft' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+    8:92   warning  'Activity' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+    8:109  warning  'AlertCircle' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+    8:130  warning  'Sparkles' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+    8:140  warning  'Bot' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    8:145  warning  'Loader2' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   47:5    warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+   49:5    warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+   52:5    warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  144:20   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/dog/[id]/history/page.tsx:144:20
+  142 |     useEffect(() => {
+  143 |         const medId = searchParams.get("medicineId")
+> 144 |         if (medId) setSelectedMedicine(medId)
+      |                    ^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  145 |     }, [searchParams])
+  146 |     const handleDeleteClick = (logId: string) => {
+  147 |         setEntryToDelete(logId)  react-hooks/set-state-in-effect
+  203:9    warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  208:13   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  558:50   warning  'idx' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/dog/[id]/medicines/new/manual/page.tsx
+  15:33  warning  'FelleskatalogenResult' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/dog/[id]/medicines/new/page.tsx
+  5:10  warning  'Button' is defined but never used     @typescript-eslint/no-unused-vars
+  7:10  warning  'ArrowLeft' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/dog/[id]/medicines/new/scan/page.tsx
+  3:41  warning  'useEffect' is defined but never used        @typescript-eslint/no-unused-vars
+  8:52  warning  'CardDescription' is defined but never used  @typescript-eslint/no-unused-vars
+  9:52  warning  'Camera' is defined but never used           @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/dog/[id]/medicines/page.tsx
+  12:16  warning  'ArrowLeft' is defined but never used                                                                         @typescript-eslint/no-unused-vars
+  20:5   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  45:13  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  58:9   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  67:8   warning  React Hook useEffect has a missing dependency: 'fetchMeds'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  87:18  warning  '_' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/dog/[id]/page.tsx
+    8:16   warning  'CardContent' is defined but never used                                                                @typescript-eslint/no-unused-vars
+    9:37   warning  'Clock' is defined but never used                                                                      @typescript-eslint/no-unused-vars
+    9:57   warning  'Pill' is defined but never used                                                                       @typescript-eslint/no-unused-vars
+    9:63   warning  'CalendarDays' is defined but never used                                                               @typescript-eslint/no-unused-vars
+    9:86   warning  'Sparkles' is defined but never used                                                                   @typescript-eslint/no-unused-vars
+    9:109  warning  'Trash2' is defined but never used                                                                     @typescript-eslint/no-unused-vars
+    9:117  warning  'UserPlus' is defined but never used                                                                   @typescript-eslint/no-unused-vars
+    9:127  warning  'Copy' is defined but never used                                                                       @typescript-eslint/no-unused-vars
+    9:133  warning  'Heart' is defined but never used                                                                      @typescript-eslint/no-unused-vars
+   11:10   warning  'deleteDog' is defined but never used                                                                  @typescript-eslint/no-unused-vars
+   12:10   warning  'MedicineBadge' is defined but never used                                                              @typescript-eslint/no-unused-vars
+   15:10   warning  'HealthLogModal' is defined but never used                                                             @typescript-eslint/no-unused-vars
+   66:12   warning  'dogName' is assigned a value but never used                                                           @typescript-eslint/no-unused-vars
+  167:21   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  171:25   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  173:25   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  183:17   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  186:27   warning  'scheduledMins' is assigned a value but never used                                                     @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/dog/[id]/profile/page.tsx
+  220:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  278:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  381:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/layout.tsx
+    6:10  warning  'LogOut' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+    6:18  warning  'Dog' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   27:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/layout.tsx:27:13
+  25 |     useEffect(() => {
+  26 |         if (!dogId) {
+> 27 |             setActiveDog(null)
+     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  28 |             return
+  29 |         }
+  30 |  react-hooks/set-state-in-effect
+   40:11  warning  'handleLogout' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   78:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @next/next/no-img-element
+  157:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @next/next/no-img-element
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/(dashboard)/new-dog/page.tsx
+  19:11  warning  'router' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/actions/dogs.ts
+   53:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  157:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/actions/felleskatalogen.ts
+   25:15  warning  'results' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   68:27  warning  '$d' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  100:26  warning  'e' is defined but never used                 @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/actions/medicines.ts
+  373:36  warning  'findError' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/api/cron/check-missed/route.ts
+    5:10  warning  'addMinutes' is defined but never used              @typescript-eslint/no-unused-vars
+    5:29  warning  'isBefore' is defined but never used                @typescript-eslint/no-unused-vars
+    5:39  warning  'startOfDay' is defined but never used              @typescript-eslint/no-unused-vars
+    5:51  warning  'endOfDay' is defined but never used                @typescript-eslint/no-unused-vars
+   43:27  warning  'plans' is assigned a value but never used          @typescript-eslint/no-unused-vars
+   87:27  warning  'scheduleDate' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  106:27  warning  'scheduleZoned' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/api/notifications/test/route.ts
+  16:28  warning  'req' is defined but never used                    @typescript-eslint/no-unused-vars
+  41:13  error    'errors' is never reassigned. Use 'const' instead  prefer-const
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/api/stripe/portal/route.ts
+  5:28  warning  'req' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/api/stripe/webhook/route.ts
+  5:8  warning  'Stripe' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/app/page.tsx
+  1:8   warning  'Link' is defined but never used        @typescript-eslint/no-unused-vars
+  2:10  warning  'Button' is defined but never used      @typescript-eslint/no-unused-vars
+  3:10  warning  'ArrowRight' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/check_env.js
+  21:15  warning  'sb' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/components/auth/login-form.tsx
+  55:18  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/components/auth/signup-form.tsx
+  61:18  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/components/dose-icon.tsx
+  53:24  warning  'percent' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  71:11  warning  'isLiquid' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/components/edit-medicine-modal.tsx
+  15:5  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+/Users/trymnordgaard/workspaces/hundemedisin/components/health-log-modal.tsx
+  144:13  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+/Users/trymnordgaard/workspaces/hundemedisin/components/pricing-modal.tsx
+  37:17  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+/Users/trymnordgaard/workspaces/hundemedisin/components/pwa/SubscriptionManager.tsx
+  123:13  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  163:33  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+/Users/trymnordgaard/workspaces/hundemedisin/components/ui/button.tsx
+  47:34  warning  'asChild' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/components/ui/command.tsx
+  26:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-empty-object-type')
+
+/Users/trymnordgaard/workspaces/hundemedisin/components/ui/textarea.tsx
+  4:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-empty-object-type')
+
+/Users/trymnordgaard/workspaces/hundemedisin/e2e/test_agent.spec.ts
+   5:11  warning  'email' is assigned a value but never used     @typescript-eslint/no-unused-vars
+   6:11  warning  'password' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  53:18  warning  'e' is defined but never used                  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/lib/stripe.ts
+  4:5  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+/Users/trymnordgaard/workspaces/hundemedisin/lib/supabase/middleware.ts
+  22:58  warning  'options' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/trymnordgaard/workspaces/hundemedisin/run_migration.js
+   3:7   warning  'path' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  21:16  warning  'runMigration' is defined but never used   @typescript-eslint/no-unused-vars
+  36:13  warning  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 100 problems (3 errors, 97 warnings)
+  1 error and 20 warnings potentially fixable with the `--fix` option.
+
