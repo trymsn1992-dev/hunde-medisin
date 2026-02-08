@@ -6,7 +6,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight, Clock, CheckCircle, Pill, CalendarDays, Loader2, Sparkles, PartyPopper, Trash2, UserPlus, Copy, Heart, Calendar } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, CheckCircle, Pill, CalendarDays, Loader2, Sparkles, PartyPopper, Trash2, UserPlus, Copy, Heart, Calendar, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { deleteDog } from "@/app/actions/dogs"
 import { MedicineBadge } from "@/components/medicine-badge"
@@ -522,9 +522,9 @@ export default function DogDashboardPage() {
                             <div className="flex flex-col items-center justify-center p-12 text-center bg-muted/20 rounded-lg border border-dashed">
                                 <PartyPopper className="h-12 w-12 text-muted-foreground/30 mb-4" />
                                 <p className="text-muted-foreground font-medium">Ingen medisiner planlagt denne dagen.</p>
-                                <Button variant="link" asChild className="mt-2 text-primary">
+                                <Button asChild className="mt-4">
                                     <Link href={`/dog/${dogId}/medicines/new`}>
-                                        Legg til medisin
+                                        <Plus className="mr-2 h-4 w-4" /> Legg til medisin
                                     </Link>
                                 </Button>
                             </div>

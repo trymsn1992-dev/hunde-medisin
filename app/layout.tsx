@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "hundemedisin - Dog Medication Tracker",
-  description: "Track your dog's medication, schedule dosing, and coordinate with family.",
+  title: "hundemedisin dosering",
+  description: "Spor hundens medisiner, planlegg dosering og koordiner med familien.",
 };
 
 export const viewport = {

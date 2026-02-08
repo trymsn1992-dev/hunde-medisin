@@ -56,7 +56,7 @@ export default function ManualEntryPage() {
                     name: f.name,
                     default_strength: f.strength,
                     source: "Felleskatalogen",
-                    description: f.description
+                    description: f.company || "Felleskatalogen" // Use company as description since we removed long description
                 }))
 
                 // Combine

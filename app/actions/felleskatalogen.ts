@@ -7,109 +7,78 @@ export type FelleskatalogenResult = {
     strength?: string
     url: string
     company?: string
-    description?: string // Indikasjoner / Bruksområde
+    description?: string // Keeping type compatible, but might be empty or snippet
 }
 
 export async function searchFelleskatalogen(query: string): Promise<FelleskatalogenResult[]> {
     if (!query || query.length < 2) return []
 
     try {
-        const searchUrl = `https://www.felleskatalogen.no/medisin/sok?q=${encodeURIComponent(query)}`
+        // Use 'sokord' instead of 'q'
+        const searchUrl = `https://www.felleskatalogen.no/medisin/sok?sokord=${encodeURIComponent(query)}`
+
         const response = await fetch(searchUrl, {
             headers: {
                 "User-Agent": "Mozilla/5.0 (compatible; DogTracker/1.0; +http://localhost)"
-            }
+            },
+            next: { revalidate: 3600 } // Cache for 1 hour
         })
+
         const html = await response.text()
         const $ = cheerio.load(html)
-        const results: FelleskatalogenResult[] = []
+        const topResults: FelleskatalogenResult[] = []
 
-        // Parse search results - adapt selector based on actual site structure
-        // Inspecting Felleskatalogen structure (approximate)
-        // Usually results are in a list. 
-        // Let's assume generic structure for now and refine if needed.
-        // Actually, Felleskatalogen often redirects to the product page if exact match, or shows list.
+        // Selectors based on Felleskatalogen structure
+        // .result-list contains .toggle-action-wrapper which contains a.toggle-action
+        const resultLinks = $('.result-list .toggle-action-wrapper a.toggle-action')
 
-        // Let's check for list items. The site typically uses `ul.search-results` or similar.
-        // Based on typical structure:
-        // .search-result-item or similar?
+        resultLinks.each((i, el) => {
+            if (topResults.length >= 10) return false // Limit to 10 results
 
-        // Quick fallback: Look for links containing "medisin/" that are not navigation.
-
-        // Limit to fewer concurrent details fetches to be polite
-        const topResults = []
-        let count = 0
-
-        const listItems = $('#search-results li, .result-item, .reference-list li')
-
-        for (let i = 0; i < listItems.length; i++) {
-            if (count >= 5) break
-            const el = listItems[i]
-
-            const anchor = $(el).find('a').first()
-            const nameFull = anchor.text().trim()
+            const anchor = $(el)
             const href = anchor.attr('href')
 
-            if (nameFull && href && href.includes('/medisin/')) {
-                const strengthMatch = nameFull.match(/(\d+([.,]\d+)?\s*(mg|ml|g|mikrog(\/ml)?))/)
-                const strength = strengthMatch ? strengthMatch[0] : undefined
+            // Extract text. The structure is often:
+            // <span class="text">
+            //   <span>
+            //     <span><strong>Name</strong> info...</span>
+            //   </span>
+            // </span>
+            // We can just get the text of the anchor and clean it up.
+            let fullText = anchor.find('.text').text().trim()
 
+            // Fallback if .text is empty
+            if (!fullText) fullText = anchor.text().trim()
+
+            // Remove "Komplett Felleskatalogtekst", "Felleskatalogtekst" etc if present
+            fullText = fullText.replace(/Komplett Felleskatalogtekst/i, '').trim()
+            fullText = fullText.replace(/Felleskatalogtekst/i, '').trim()
+            // Remove trailing "K" which often appears in the text
+            fullText = fullText.replace(/\s+K$/, '').trim()
+
+            if (fullText && href) {
                 const fullUrl = href.startsWith('http') ? href : `https://www.felleskatalogen.no${href}`
 
-                // 2. Fetch Details for this item (Description)
-                // We do this inside the loop but maybe only for the first few?
-                // Let's do a quick fetch
-                let description = ""
-                try {
-                    const detailRes = await fetch(fullUrl, {
-                        headers: { "User-Agent": "Mozilla/5.0 (compatible; DogTracker/1.0)" }
-                    })
-                    const detailHtml = await detailRes.text()
-                    const $d = cheerio.load(detailHtml)
+                // Attempt to parse strength/form from text
+                // Example: "Paracet «Karo Pharma» brusetabl., mikst., smeltetabl., supp., tabl. (paracetamol)"
+                // Example: "paracetamol tab 500 mg"
 
-                    // Try to find "Indikasjoner" section
-                    // Felleskatalogen often has headers like <h2>Indikasjoner</h2> followed by <p>
-                    // Or .varsel-box inside
-
-                    // Strategy: Find h2 containter "Indikasjoner", get next p
-                    let indications = ""
-                    $('h2, h3').each((j, h) => {
-                        if ($(h).text().toLowerCase().includes('indikasjoner') || $(h).text().toLowerCase().includes('bruksområde')) {
-                            // Get content after
-                            // often it's in a div or p following
-                            let next = $(h).next()
-                            while (next.length && next[0].tagName !== 'h2' && next[0].tagName !== 'h3') {
-                                if (next.is('p') || next.is('div')) {
-                                    const text = next.text().trim()
-                                    if (text) {
-                                        indications += text + " "
-                                        if (indications.length > 150) break // Limit length
-                                    }
-                                }
-                                next = next.next()
-                            }
-                        }
-                    })
-
-                    if (indications) {
-                        // Clean up
-                        description = indications.replace(/\s+/g, ' ').trim().slice(0, 150)
-                        if (description.length >= 150) description += "..."
-                    }
-
-                } catch (e) {
-                    console.log("Failed to fetch details for", nameFull)
+                let strength = undefined
+                // Regex for strength like "500 mg", "1 g", "10 mg/ml"
+                const strengthMatch = fullText.match(/(\d+([.,]\d+)?\s*(mg|ml|g|mikrog(\/ml)?))/i)
+                if (strengthMatch) {
+                    strength = strengthMatch[0]
                 }
 
                 topResults.push({
-                    name: nameFull,
+                    name: fullText,
                     strength: strength,
                     url: fullUrl,
-                    description: description
+                    company: "Felleskatalogen",
+                    description: "" // Skipped for performance
                 })
-                count++
             }
-        }
+        })
 
         return topResults
 

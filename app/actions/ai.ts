@@ -110,3 +110,81 @@ export async function getWeeklyHealthSummary(dogId: string) {
         return { success: false, error: "Kunne ikke generere rapport." }
     }
 }
+
+export async function getMonthlyHealthSummary(dogId: string) {
+    const supabase = await createClient()
+
+    // 1. Define range (Last 30 days)
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - 30)
+
+    // 2. Fetch Data
+    const { data: doseLogs } = await supabase
+        .from('dose_logs')
+        .select(`taken_at, status, medicine:medicines(name)`)
+        .eq('dog_id', dogId)
+        .gte('taken_at', startDate.toISOString())
+        .lte('taken_at', endDate.toISOString())
+
+    const { data: healthLogs } = await supabase
+        .from('health_logs')
+        .select('*')
+        .eq('dog_id', dogId)
+        .gte('date', startDate.toISOString().split('T')[0])
+        .lte('date', endDate.toISOString().split('T')[0])
+
+    // 3. Format Data for Analysis
+    const totalDoses = doseLogs?.length || 0
+    const missedDoses = doseLogs?.filter(d => d.status === 'missed').length || 0
+
+    // Group health issues by type to see trends
+    const stoolIssues = healthLogs?.filter(h => h.stool && h.stool !== 'Normal').length || 0
+    const itchDays = healthLogs?.filter(h => h.itch_locations && h.itch_locations.length > 0).length || 0
+    const lowEnergyDays = healthLogs?.filter(h => !h.is_playful).length || 0
+    const lowAppetiteDays = healthLogs?.filter(h => !h.is_hungry).length || 0
+
+    // Extract key notes (limit to avoid token overflow)
+    const keyNotes = healthLogs?.filter(h => h.notes).map(h => `${h.date}: ${h.notes}`).slice(0, 10) || []
+
+    const prompt = `
+    Analyze the last 30 days of health data for the dog.
+    
+    Data:
+    - Period: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}
+    - Total doses scheduled: ${totalDoses}
+    - Missed doses: ${missedDoses}
+    - Abnormal Stool Days: ${stoolIssues}
+    - Itchiness Reported Days: ${itchDays}
+    - Low Energy Days: ${lowEnergyDays}
+    - Low Appetite Days: ${lowAppetiteDays}
+    - Recent Notes Sample: ${keyNotes.join('; ')}
+    
+    Task:
+    Provide a monthly trend analysis in Norwegian (Bokmål).
+    - Focus on PATTERNS and TRENDS over the month rather than specific daily events.
+    - Structure:
+      1. **Trendvurdering**: (Overall trend - Stable, Improving, Declining?)
+      2. **Høydepunkter**: (Positive observations or persistent issues)
+      3. **Anbefaling**: (Longer term recommendation based on the month)
+    - Tone: Professional, analytical, veterinary assistant style.
+    `
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                { role: "system", content: "You are a veterinary data analyst. Analyze trends over 30 days." },
+                { role: "user", content: prompt }
+            ],
+            max_tokens: 300,
+        })
+
+        const text = response.choices[0].message.content
+        return { success: true, text }
+
+    } catch (error) {
+        console.error("OpenAI Error (Monthly):", error)
+        return { success: false, error: "Kunne ikke generere månedlig analyse." }
+    }
+}
