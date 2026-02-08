@@ -24,7 +24,7 @@ export async function getWeeklyHealthSummary(dogId: string) {
         .eq('week_start_date', weekStartStr)
         .single()
 
-    if (cached) {
+    if (cached && cached.summary_text.includes('##')) {
         return { success: true, text: cached.summary_text, cached: true }
     }
 
@@ -74,22 +74,28 @@ export async function getWeeklyHealthSummary(dogId: string) {
     
     Task:
     Provide a clinical, concise weekly summary in Norwegian (Bokmål).
-    - Style: Direct, objective, bullet points permitted but keep it coherent. No "Hei der" or "Voff". No emojis.
+    - Style: Direct, objective. No emojis.
     - Structure:
-      1. Overall Status (1 sentence: Stabil/Improving/Needs Attention)
-      2. Observations (List key issues or "None")
-      3. Action Plan (If issues exist, briefly allow suggestion, otherwise "Continue current regimen")
+      
+      ## Status
+      (Stabil / I bedring / Trenger tilsyn)
+
+      ## Observasjoner
+      - (Bullet points of key issues or "Ingen anmerkninger")
+
+      ## Tiltak
+      (Short action plan or "Fortsett dagens regime")
     - Keep it short.
-  `
+    `
 
     try {
         const response = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
-                { role: "system", content: "You are a veterinary logging assistant. Be direct, concise, and clinical." },
+                { role: "system", content: "You are a veterinary logging assistant. Use Markdown headers (##) for sections." },
                 { role: "user", content: prompt }
             ],
-            max_tokens: 200,
+            max_tokens: 300,
         })
 
         const text = response.choices[0].message.content
@@ -164,9 +170,16 @@ export async function getMonthlyHealthSummary(dogId: string) {
     Provide a monthly trend analysis in Norwegian (Bokmål).
     - Focus on PATTERNS and TRENDS over the month rather than specific daily events.
     - Structure:
-      1. **Trendvurdering**: (Overall trend - Stable, Improving, Declining?)
-      2. **Høydepunkter**: (Positive observations or persistent issues)
-      3. **Anbefaling**: (Longer term recommendation based on the month)
+    
+      ## Trendvurdering
+      (Overall trend - Stable, Improving, Declining?)
+
+      ## Høydepunkter
+      (Positive observations or persistent issues)
+
+      ## Anbefaling
+      (Longer term recommendation based on the month)
+      
     - Tone: Professional, analytical, veterinary assistant style.
     `
 
@@ -174,10 +187,10 @@ export async function getMonthlyHealthSummary(dogId: string) {
         const response = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
-                { role: "system", content: "You are a veterinary data analyst. Analyze trends over 30 days." },
+                { role: "system", content: "You are a veterinary data analyst. Use Markdown headers (##) for sections." },
                 { role: "user", content: prompt }
             ],
-            max_tokens: 300,
+            max_tokens: 400,
         })
 
         const text = response.choices[0].message.content
