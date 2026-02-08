@@ -109,7 +109,14 @@ export default function DogDashboardPage() {
         if (!user) return
 
         // 1. Fetch Dog Info
-        const { data: dog } = await supabase.from('dogs').select('name').eq('id', dogId).single()
+        const { data: dog, error: dogError } = await supabase.from('dogs').select('name').eq('id', dogId).single()
+
+        if (dogError || !dog) {
+            console.error("Dog not found or access denied", dogError)
+            router.push("/dashboard")
+            return
+        }
+
         if (dog) {
             setDogName(dog.name)
         }
