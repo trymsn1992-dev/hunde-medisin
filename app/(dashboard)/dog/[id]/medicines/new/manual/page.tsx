@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { createMedicine } from "@/app/actions/medicines"
+import { createMedicine, createSingleDoseMedicine } from "@/app/actions/medicines"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Clock, Palette, Check, ChevronsUpDown } from "lucide-react"
+import { ArrowLeft, Clock, Palette, Check, ChevronsUpDown, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 // Import colors
 import { MED_COLORS } from "@/lib/medicine-utils"
@@ -141,6 +141,52 @@ export default function ManualEntryPage() {
             console.error(err)
             const message = err instanceof Error ? err.message : "Unknown error"
             alert("Error: " + message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSingleDose = async () => {
+        // Validate minimal fields
+        if (!name || !doseText) {
+            alert("Må ha navn og dosering for å gi enkeltdose.")
+            return
+        }
+
+        setLoading(true)
+        try {
+            const now = new Date()
+            const todayStr = now.toISOString().split('T')[0]
+
+            let dateTimeStr = ""
+
+            if (startDate === todayStr) {
+                dateTimeStr = now.toISOString()
+            } else {
+                // Construct date at 12:00 local time
+                const d = new Date(startDate + 'T12:00:00')
+                dateTimeStr = d.toISOString()
+            }
+
+            const result = await createSingleDoseMedicine({
+                dogId,
+                name,
+                strength,
+                notes,
+                doseText,
+                date: dateTimeStr,
+                color: selectedColor || undefined
+            })
+
+            if (!result.success) {
+                throw new Error(result.error)
+            }
+
+            router.push(`/dog/${dogId}/history?medicineId=${result.id}`)
+            router.refresh()
+        } catch (e: any) {
+            console.error(e)
+            alert("Feil: " + e.message)
         } finally {
             setLoading(false)
         }
@@ -323,9 +369,14 @@ export default function ManualEntryPage() {
                             {times.length === 0 && <p className="text-destructive text-sm">Velg minst ett tidspunkt.</p>}
                         </div>
 
-                        <Button type="submit" className="w-full" disabled={loading || times.length === 0}>
-                            {loading ? "Lagrer..." : "Lagre medisin"}
-                        </Button>
+                        <div className="flex gap-4">
+                            <Button type="button" variant="secondary" className="flex-1" onClick={handleSingleDose} disabled={loading || !name || !doseText}>
+                                <Zap className="mr-2 h-4 w-4" /> Gi enkelt dose
+                            </Button>
+                            <Button type="submit" className="flex-1" disabled={loading || times.length === 0}>
+                                {loading ? "Lagrer..." : "Lagre medisin"}
+                            </Button>
+                        </div>
                     </form>
                 </CardContent>
             </Card>

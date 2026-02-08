@@ -8,8 +8,8 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { deleteMedicine, pauseMedicine, resumeMedicine } from "@/app/actions/medicines"
-import { Plus, ArrowLeft, Trash2, Pause, Play } from "lucide-react"
+import { deleteMedicine, pauseMedicine, resumeMedicine, logAsNeededDose } from "@/app/actions/medicines"
+import { Plus, ArrowLeft, Trash2, Pause, Play, Zap } from "lucide-react"
 import { MedicineBadge } from "@/components/medicine-badge"
 import { EditMedicineModal } from "@/components/edit-medicine-modal"
 
@@ -28,6 +28,10 @@ export default function MedicinesPage() {
     const [resumingId, setResumingId] = useState<string | null>(null)
     const [pauseDate, setPauseDate] = useState<string>(new Date().toISOString().slice(0, 16)) // YYYY-MM-DDTHH:mm
     const [actionLoading, setActionLoading] = useState(false)
+
+    // Give Dose State (As Needed)
+    const [givingDoseId, setGivingDoseId] = useState<string | null>(null)
+    const [giveDoseTime, setGiveDoseTime] = useState<string>(new Date().toISOString().slice(0, 16))
 
     const fetchMeds = async () => {
         // Fetch medicines AND their latest plan to know active/paused status
@@ -153,6 +157,45 @@ export default function MedicinesPage() {
         }
     }
 
+    // --- GIVE DOSE LOGIC ---
+    const openGiveDoseDialog = (id: string) => {
+        const now = new Date()
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+        setGiveDoseTime(now.toISOString().slice(0, 16))
+        setGivingDoseId(id)
+    }
+
+    const handleGiveDoseConfirm = async () => {
+        if (!givingDoseId) return
+        setActionLoading(true)
+        try {
+            const med = medicines.find(m => m.id === givingDoseId)
+            if (!med || !med.currentPlan) return
+
+            const dateObj = new Date(giveDoseTime)
+            const isoString = dateObj.toISOString()
+
+            const result = await logAsNeededDose({
+                planId: med.currentPlan.id,
+                medicineId: med.id,
+                dogId,
+                takenAt: isoString
+            })
+
+            if (!result.success) alert("Feil: " + result.error)
+            else {
+                // Feedback handled by dialog closing + refresh
+                await fetchMeds()
+            }
+        } catch (e: any) {
+            console.error(e)
+            alert("Kritisk feil: " + e.message)
+        } finally {
+            setActionLoading(false)
+            setGivingDoseId(null)
+        }
+    }
+
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
             <div className="flex items-center justify-between">
@@ -260,6 +303,19 @@ export default function MedicinesPage() {
                                         </Button>
                                     )}
 
+                                    {/* GIVE DOSE BUTTON (As Needed Only) */}
+                                    {plan?.frequency_type === 'as_needed' && !isPaused && (
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            onClick={() => openGiveDoseDialog(med.id)}
+                                            title="Gi dose nå"
+                                        >
+                                            <Zap className="h-4 w-4" />
+                                        </Button>
+                                    )}
+
                                     <Button
                                         variant={confirmId === med.id ? "destructive" : "ghost"}
                                         size={confirmId === med.id ? "default" : "icon"}
@@ -322,6 +378,7 @@ export default function MedicinesPage() {
             )}
 
             {/* RESUME DIALOG OVERLAY */}
+            {/* RESUME DIALOG OVERLAY */}
             {resumingId && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <Card className="w-full max-w-md">
@@ -365,6 +422,32 @@ export default function MedicinesPage() {
                             >
                                 Avbryt
                             </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* GIVE DOSE DIALOG OVERLAY */}
+            {givingDoseId && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <Card className="w-full max-w-sm">
+                        <CardHeader>
+                            <CardTitle>Gi enkelt dose ⚡</CardTitle>
+                            <CardDescription>Registrer en dose nå?</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <input
+                                type="datetime-local"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                                value={giveDoseTime}
+                                onChange={(e) => setGiveDoseTime(e.target.value)}
+                            />
+                            <div className="flex gap-2 justify-end pt-2">
+                                <Button variant="outline" onClick={() => setGivingDoseId(null)}>Avbryt</Button>
+                                <Button onClick={handleGiveDoseConfirm} disabled={actionLoading}>
+                                    {actionLoading ? "Lagrer..." : "Registrer Dose"}
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>

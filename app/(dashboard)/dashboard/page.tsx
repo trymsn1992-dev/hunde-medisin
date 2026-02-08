@@ -44,6 +44,12 @@ export default function DashboardPage() {
                 console.error("Error fetching dogs:", dogsError)
             } else {
                 setDogs((dogsData as unknown as Dog[]) || [])
+
+                // Redirect if no dogs
+                if (!dogsData || dogsData.length === 0) {
+                    router.push("/new-dog")
+                    return
+                }
             }
 
             // Fetch subscription status

@@ -420,3 +420,107 @@ export async function updateMedicine(id: string, data: {
         return { success: false, error: error.message || "Failed to update medicine" }
     }
 }
+
+export async function createSingleDoseMedicine(data: {
+    dogId: string
+    name: string
+    strength: string
+    notes: string
+    doseText: string
+    date: string // ISO string for when it was given
+    color?: string
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    try {
+        // 1. Create Medicine
+        const { data: med, error: medError } = await supabase
+            .from('medicines')
+            .insert({
+                dog_id: data.dogId,
+                name: data.name,
+                strength: data.strength,
+                notes: data.notes,
+                color: data.color
+            })
+            .select()
+            .single()
+
+        if (medError) throw medError
+
+        // 2. Create Plan (As Needed)
+        const { data: plan, error: planError } = await supabase
+            .from('medication_plans')
+            .insert({
+                medicine_id: med.id,
+                start_date: data.date,
+                end_date: null,
+                frequency_type: 'as_needed',
+                schedule_times: [],
+                dose_text: data.doseText,
+                active: true
+            })
+            .select()
+            .single()
+
+        if (planError) throw planError
+
+        // 3. Log the dose immediately
+        const { error: logError } = await supabase
+            .from('dose_logs')
+            .insert({
+                plan_id: plan.id,
+                medicine_id: med.id,
+                dog_id: data.dogId,
+                taken_at: data.date,
+                taken_by: user.id,
+                status: 'taken',
+                notes: 'Enkeltdose / Ved behov'
+            })
+
+        if (logError) throw logError
+
+        revalidatePath('/', 'layout')
+        return { success: true, id: med.id }
+
+    } catch (error: any) {
+        console.error("Create Single Dose Error:", error)
+        return { success: false, error: error.message || "Failed to create single dose" }
+    }
+}
+
+export async function logAsNeededDose(data: {
+    planId: string
+    medicineId: string
+    dogId: string
+    takenAt: string
+    notes?: string
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    try {
+        const { error } = await supabase
+            .from('dose_logs')
+            .insert({
+                plan_id: data.planId,
+                medicine_id: data.medicineId,
+                dog_id: data.dogId,
+                taken_at: data.takenAt,
+                taken_by: user.id,
+                status: 'taken',
+                notes: data.notes || 'Ved behov dose'
+            })
+
+        if (error) throw error
+
+        revalidatePath('/', 'layout')
+        return { success: true }
+    } catch (error: any) {
+        console.error("Log As Needed Error:", error)
+        return { success: false, error: error.message || "Failed to log dose" }
+    }
+}
