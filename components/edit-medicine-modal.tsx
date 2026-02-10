@@ -29,6 +29,7 @@ export function EditMedicineModal({ medicine, onSuccess }: EditMedicineModalProp
     // Initial State from Plan
     const plan = medicine.currentPlan || {}
     const [doseText, setDoseText] = useState(plan.dose_text || "")
+    const [startDate, setStartDate] = useState(plan.start_date ? new Date(plan.start_date).toISOString().slice(0, 10) : "")
     const [times, setTimes] = useState<string[]>(plan.schedule_times || ["08:00"])
 
     const handleAddTime = () => {
@@ -53,6 +54,7 @@ export function EditMedicineModal({ medicine, onSuccess }: EditMedicineModalProp
                 strength,
                 notes,
                 doseText,
+                startDate,
                 times,
                 color
             })
@@ -125,35 +127,46 @@ export function EditMedicineModal({ medicine, onSuccess }: EditMedicineModalProp
                     </div>
 
                     {/* Schedule */}
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <Label>Tidspunkter</Label>
-                            <Button variant="ghost" size="sm" onClick={handleAddTime} className="h-6 text-xs">
-                                <Plus className="h-3 w-3 mr-1" /> Legg til tid
-                            </Button>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Startdato</Label>
+                            <Input
+                                type="date"
+                                value={startDate}
+                                onChange={e => setStartDate(e.target.value)}
+                            />
                         </div>
-                        <div className="space-y-2 border rounded-md p-3 bg-muted/20">
-                            {times.map((time, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                    <Input
-                                        type="time"
-                                        value={time}
-                                        onChange={(e) => handleTimeChange(index, e.target.value)}
-                                        className="flex-1"
-                                    />
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-destructive hover:bg-destructive/10 h-10 w-10 shrink-0"
-                                        onClick={() => handleRemoveTime(index)}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                            {times.length === 0 && (
-                                <p className="text-xs text-muted-foreground text-center py-2">Ingen faste tidspunkter (Ved behov?)</p>
-                            )}
+
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label>Tidspunkter</Label>
+                                <Button variant="ghost" size="sm" onClick={handleAddTime} className="h-6 text-xs">
+                                    <Plus className="h-3 w-3 mr-1" /> Legg til tid
+                                </Button>
+                            </div>
+                            <div className="space-y-2 border rounded-md p-3 bg-muted/20">
+                                {times.map((time, index) => (
+                                    <div key={index} className="flex items-center gap-2">
+                                        <Input
+                                            type="time"
+                                            value={time}
+                                            onChange={(e) => handleTimeChange(index, e.target.value)}
+                                            className="flex-1"
+                                        />
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-destructive hover:bg-destructive/10 h-10 w-10 shrink-0"
+                                            onClick={() => handleRemoveTime(index)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                {times.length === 0 && (
+                                    <p className="text-xs text-muted-foreground text-center py-2">Ingen faste tidspunkter (Ved behov?)</p>
+                                )}
+                            </div>
                         </div>
                     </div>
 

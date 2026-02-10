@@ -348,6 +348,7 @@ export async function updateMedicine(id: string, data: {
     notes: string
     doseText: string
     times: string[]
+    startDate?: string
     color?: string
 }) {
     const supabase = await createClient()
@@ -383,7 +384,8 @@ export async function updateMedicine(id: string, data: {
                 .from('medication_plans')
                 .update({
                     dose_text: data.doseText,
-                    schedule_times: data.times
+                    schedule_times: data.times,
+                    start_date: data.startDate
                 })
                 .eq('id', plan.id)
 
@@ -405,7 +407,8 @@ export async function updateMedicine(id: string, data: {
                     .from('medication_plans')
                     .update({
                         dose_text: data.doseText,
-                        schedule_times: data.times
+                        schedule_times: data.times,
+                        start_date: data.startDate
                     })
                     .eq('id', latestPlan.id)
 
