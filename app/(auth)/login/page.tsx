@@ -1,19 +1,31 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
-import { Lock, Mail } from "lucide-react"
+import { Lock, Mail, Loader2 } from "lucide-react"
 
 export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <LoginFormWithParams />
+        </Suspense>
+    )
+}
+
+function LoginFormWithParams() {
+    const searchParams = useSearchParams()
+    const errorMsg = searchParams.get("error")
+    const successMsg = searchParams.get("message")
+
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [error, setError] = useState<string | null>(errorMsg)
     const router = useRouter()
     const supabase = createClient()
 
@@ -86,7 +98,20 @@ export default function LoginPage() {
                         </div>
                     </div>
                 </div>
-                <form onSubmit={handleLogin} className="space-y-4">
+
+                {successMsg && (
+                    <div className="mt-4 p-3 bg-green-100 border border-green-200 text-green-700 rounded-md text-sm text-center">
+                        {successMsg}
+                    </div>
+                )}
+
+                {error && (
+                    <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-md text-sm text-center font-medium">
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleLogin} className="space-y-4 mt-4">
 
                     <div className="space-y-2">
                         <div className="relative">
@@ -114,11 +139,7 @@ export default function LoginPage() {
                             />
                         </div>
                     </div>
-                    {error && (
-                        <div className="text-sm text-destructive font-medium text-center">
-                            {error}
-                        </div>
-                    )}
+
                     <Button className="w-full font-semibold" type="submit" disabled={loading}>
                         {loading ? "Logger inn..." : "Logg inn"}
                     </Button>
