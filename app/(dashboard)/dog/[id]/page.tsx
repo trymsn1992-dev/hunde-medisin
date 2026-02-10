@@ -134,6 +134,8 @@ export default function DogDashboardPage() {
              medicine_id,
              dose_text,
              schedule_times,
+             start_date,
+             end_date,
              medicine:medicines (name, strength, color, notes)
            `)
                 .in('medicine_id', medicineIds)
@@ -169,10 +171,21 @@ export default function DogDashboardPage() {
                     const isFutute = currentDate > now && !isToday
                     const isPast = currentDate < now && !isToday
 
+                    const currentTString = currentDate.toISOString().split('T')[0]
+
                     const currentTotalMins = now.getHours() * 60 + now.getMinutes()
 
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     plans.forEach((p: any) => {
+                        // FILTER: Check if plan is relevant for specific date DATE
+                        const planStartStr = new Date(p.start_date).toISOString().split('T')[0]
+                        if (currentTString < planStartStr) return // Too early for this plan
+
+                        if (p.end_date) {
+                            const planEndStr = new Date(p.end_date).toISOString().split('T')[0]
+                            if (currentTString > planEndStr) return // Plan ended
+                        }
+
                         const times = (p.schedule_times as string[] || []).sort()
                         // Find logs for this plan
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
