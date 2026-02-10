@@ -170,7 +170,7 @@ export default function DashboardLayout({
 
                 <main className="flex-1 container px-4 pt-14 pb-8 md:pt-8 md:p-8 w-full max-w-7xl mx-auto transition-all duration-300">
                     <div className="mb-6">
-                        <BetaBanner />
+                        {!pathname.includes('/scan') && <BetaBanner />}
                     </div>
                     {children}
                 </main>

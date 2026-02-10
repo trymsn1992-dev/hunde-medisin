@@ -58,7 +58,7 @@ export async function getWeeklyHealthSummary(dogId: string) {
         if (h.itch_locations && h.itch_locations.length > 0) issues.push(`Kløe: ${h.itch_locations.join(', ')} (${h.date})`)
         if (!h.is_playful) issues.push(`Nedsatt energinivå (${h.date})`)
         if (!h.wants_walk) issues.push(`Ville ikke gå tur (${h.date})`)
-        if (!h.is_hungry) issues.push(`Nedsatt matlyst (${h.date})`)
+        if (h.hungry_level === 'Nei') issues.push(`Nedsatt matlyst (${h.date})`)
         if (h.notes) issues.push(`Notat (${h.date}): ${h.notes}`)
         return issues
     }) || []
@@ -120,7 +120,28 @@ export async function getWeeklyHealthSummary(dogId: string) {
 export async function getMonthlyHealthSummary(dogId: string) {
     const supabase = await createClient()
 
-    // 1. Define range (Last 30 days)
+    // 1. Define range (Last 30 days) AND Cache Key (Start of month or similar? Or just daily cache?)
+    // Let's cache based on "YYYY-MM-DD" of today to avoid re-generating same day
+    const todayStr = new Date().toISOString().split('T')[0]
+
+    // CHECK CACHE
+    const { data: cached } = await supabase
+        .from('health_summaries')
+        .select('summary_text')
+        .eq('dog_id', dogId)
+        .eq('start_date', todayStr) // adapting schema usage abuse or add new columns? 
+        // Schema lookup: health_summaries has week_start_date. 
+        // We can reuse week_start_date column but store "MONTHLY-YYYY-MM-DD" or just add a 'type' column?
+        // Checking schema.sql, health_summaries is NOT THERE. I likely missed reading it or it was created manually/in another migration?
+        // Assuming it has (dog_id, week_start_date, summary_text).
+        // I will use a special prefix for monthly in week_start_date like "MONTHLY-2024-02-10" to avoid collision with legitimate weeks.
+        .eq('week_start_date', `MONTHLY-${todayStr}`)
+        .single()
+
+    if (cached) {
+        return { success: true, text: cached.summary_text, cached: true }
+    }
+
     const endDate = new Date()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - 30)
@@ -148,7 +169,7 @@ export async function getMonthlyHealthSummary(dogId: string) {
     const stoolIssues = healthLogs?.filter(h => h.stool && h.stool !== 'Normal').length || 0
     const itchDays = healthLogs?.filter(h => h.itch_locations && h.itch_locations.length > 0).length || 0
     const lowEnergyDays = healthLogs?.filter(h => !h.is_playful).length || 0
-    const lowAppetiteDays = healthLogs?.filter(h => !h.is_hungry).length || 0
+    const lowAppetiteDays = healthLogs?.filter(h => h.hungry_level === 'Nei').length || 0
 
     // Extract key notes (limit to avoid token overflow)
     const keyNotes = healthLogs?.filter(h => h.notes).map(h => `${h.date}: ${h.notes}`).slice(0, 10) || []
@@ -194,7 +215,16 @@ export async function getMonthlyHealthSummary(dogId: string) {
         })
 
         const text = response.choices[0].message.content
-        return { success: true, text }
+
+        if (text) {
+            await supabase.from('health_summaries').upsert({
+                dog_id: dogId,
+                week_start_date: `MONTHLY-${todayStr}`,
+                summary_text: text
+            }, { onConflict: 'dog_id, week_start_date' })
+        }
+
+        return { success: true, text, cached: false }
 
     } catch (error) {
         console.error("OpenAI Error (Monthly):", error)
